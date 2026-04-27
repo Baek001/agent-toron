@@ -1,0 +1,33 @@
+name: agent-toron
+
+services:
+  debate-room:
+    build:
+      context: .
+      args:
+        INSTALL_AI_CLIS: "true"
+    image: agent-toron:local
+    container_name: agent-toron
+    ports:
+      - "${HOST_PORT:-4187}:4187"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "4187"
+      OPENCLAW_PROFILE: "debate"
+      DEBATE_ENGINE_TIMEOUT_MS: "90000"
+      OPENCLAW_TIMEOUT_MS: "90000"
+      HOME: "/home/node"
+    volumes:
+      - debate-data:/app/data
+      - debate-output:/app/output
+      - openclaw-debate-profile:/home/node/.openclaw-debate
+      - codex-home:/home/node/.codex
+      - claude-home:/home/node/.claude
+    restart: unless-stopped
+
+volumes:
+  debate-data:
+  debate-output:
+  openclaw-debate-profile:
+  codex-home:
+  claude-home:

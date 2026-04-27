@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Debate MVP</title>
+    <link rel="icon" href="data:,">
+    <script
+        src="https://unpkg.com/lucide@1.11.0/dist/umd/lucide.min.js"
+        integrity="sha384-7PArHXNzg1s/WgbAH9xkBpx4T6MJ0jPAxaEM9yld+zvdFEjSf+wzzv0hDnem/6rw"
+        crossorigin="anonymous"
+    ></script>
+    <style>
+        :root {
+            --bg: #f7f7f2;
+            --bg-soft: #efeee8;
+            --panel: #ffffff;
+            --panel-soft: #f4f4ef;
+            --line: #deded6;
+            --line-strong: #bebeb4;
+            --text: #202123;
+            --muted: #686d73;
+            --quiet: #8a8f87;
+            --accent: #10a37f;
+            --accent-soft: #e5f4ee;
+            --agent-1: #6b6f80;
+            --agent-2: #10a37f;
+            --agent-3: #b96f22;
+            --main: #202123;
+            --human: #2f6fed;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+        }
+
+        body {
+            height: 100svh;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 247, 242, 0.96) 34%, var(--bg-soft));
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: minmax(0, 980px);
+            grid-template-rows: minmax(0, 1fr);
+            justify-content: center;
+            gap: 0;
+            height: 100svh;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 clamp(14px, 5vw, 72px);
+        }
+
+        .app:not(.debate-mode) .debate-panel {
+            display: none;
+        }
+
+        .app.debate-mode {
+            grid-template-columns: clamp(240px, 28vw, 340px) minmax(0, 1fr);
+            grid-template-rows: minmax(0, 1fr);
+            gap: clamp(14px, 2.2vw, 24px);
+            max-width: 1240px;
+            padding: 12px clamp(10px, 2.8vw, 28px);
+        }
+
+        .app.chat-focus {
+            grid-template-columns: minmax(0, 980px);
+            grid-template-rows: minmax(0, 1fr);
+            justify-content: center;
+            width: 100%;
+            padding-inline: clamp(14px, 5vw, 72px);
+        }
+
+        .app.chat-focus .debate-panel {
+            display: none;
+        }
+
+        .app.chat-focus .main-panel {
+            border-color: transparent;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .app.chat-focus .main-panel .panel-header {
+            width: min(800px, 100%);
+            margin: 0 auto;
+            border: 0;
+            background: transparent;
+            padding-inline: 0;
+        }
+
+        .app.chat-focus .main-panel .message-list {
+            align-items: stretch;
+            width: min(800px, 100%);
+            margin: 0 auto;
+            padding: 26px 0 22px;
+        }
+
+        .app.chat-focus .main-panel .message {
+            max-width: min(760px, 100%);
+        }
+
+        .app.chat-focus .main-panel .message.right {
+            max-width: min(640px, 82%);
+            margin-left: auto;
+        }
+
+        .app.chat-focus .main-panel .bubble {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .app.chat-focus .main-panel .decision-board,
+        .app.chat-focus .main-panel .composer {
+            width: min(800px, 100%);
+            margin-inline: auto;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 14px 36px rgba(32, 33, 35, 0.08);
+        }
+
+        .app.chat-focus .main-panel .decision-board {
+            margin-bottom: 12px;
+        }
+
+        .app.chat-focus .main-panel .composer {
+            margin-bottom: 4px;
+            padding: 12px;
+        }
+
+        .app.debate-mode .main-panel {
+            grid-column: 1;
+            grid-row: 1;
+            min-height: 0;
+            padding-right: clamp(10px, 1.5vw, 16px);
+            border-right: 1px solid var(--line);
+        }
+
+        .app.debate-mode .main-panel .decision-board,
+        .app.debate-mode .main-panel .composer {
+            display: none;
+        }
+
+        .app.debate-mode #topicForm {
+            display: none;
+        }
+
+        .app.debate-mode .main-panel .message-list {
+            width: 100%;
+            padding: 8px 0 0;
+        }
+
+        .app.debate-mode .main-panel .panel-header {
+            width: 100%;
+            padding: 10px 0 12px;
+        }
+
+        .app.debate-mode .main-panel .message {
+            max-width: 100%;
+        }
+
+        .app.debate-mode .main-panel .message.right {
+            max-width: 92%;
+        }
+
+        .app.debate-mode .main-panel .bubble {
+            padding: 10px 12px;
+            font-size: 0.86rem;
+            line-height: 1.52;
+        }
+
+        .app.debate-mode .debate-panel {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            min-height: 0;
+            padding-top: 0;
+        }
+
+        .app.debate-mode .debate-panel .panel-header,
+        .app.debate-mode .debate-panel .message-list,
+        .app.debate-mode .debate-panel .composer {
+            width: min(840px, 100%);
+        }
+
+        .panel {
+            min-height: 0;
+            overflow: hidden;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .main-panel,
+        .debate-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            width: min(800px, 100%);
+            margin: 0 auto;
+            padding: 19px 22px;
+            border-bottom: 0;
+            background: transparent;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .mark {
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius);
+            background: var(--accent-soft);
+            color: var(--text);
+            border: 1px solid rgba(16, 163, 127, 0.22);
+        }
+
+        h1,
+        h2,
+        p {
+            margin: 0;
+        }
+
+        h1,
+        h2 {
+            line-height: 1.25;
+            letter-spacing: 0;
+        }
+
+        h1 {
+            font-size: 1.05rem;
+            font-weight: 650;
+        }
+
+        h2 {
+            font-size: 1rem;
+            font-weight: 650;
+        }
+
+        .subcopy {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
+        .topic-block {
+            min-width: 0;
+        }
+
+        .eyebrow {
+            margin-bottom: 4px;
+            color: var(--quiet);
+            font-size: 0.75rem;
+            font-weight: 650;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .topic-title {
+            max-width: 780px;
+            overflow: hidden;
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: var(--radius);
+            color: var(--text);
+            background: #ffffff;
+            border: 1px solid var(--line);
+            cursor: pointer;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+        }
+
+        .button:hover:not(:disabled) {
+            background: #f4f4ef;
+            border-color: var(--line-strong);
+        }
+
+        .button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .button:disabled {
+            color: var(--quiet);
+            cursor: not-allowed;
+            opacity: 0.66;
+        }
+
+        .button-primary {
+            background: var(--text);
+            color: white;
+            border-color: var(--text);
+            font-weight: 650;
+        }
+
+        .button-primary:hover:not(:disabled) {
+            background: #343541;
+            border-color: #343541;
+        }
+
+        .button-icon {
+            width: 40px;
+            padding: 0;
+        }
+
+        .message-list {
+            display: flex;
+            flex: 1;
+            width: min(800px, 100%);
+            min-height: 0;
+            flex-direction: column;
+            gap: 14px;
+            margin: 0 auto;
+            overflow-y: auto;
+            padding: 22px 0;
+            scroll-behavior: smooth;
+        }
+
+        .message-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .message-list::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: #cbc9bf;
+        }
+
+        .message {
+            display: grid;
+            max-width: min(760px, 88%);
+            gap: 7px;
+            animation: enter 220ms ease both;
+        }
+
+        .message.right {
+            justify-self: end;
+        }
+
+        @keyframes enter {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 650;
+        }
+
+        .message.right .message-meta {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius);
+            color: white;
+            background: var(--main);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+        }
+
+        .avatar.agent1 {
+            background: var(--agent-1);
+        }
+
+        .avatar.agent2 {
+            background: var(--agent-2);
+            color: white;
+        }
+
+        .avatar.agent3 {
+            background: var(--agent-3);
+            color: white;
+        }
+
+        .avatar.user {
+            background: var(--human);
+        }
+
+        .bubble {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #ffffff;
+            padding: 13px 15px;
+            color: var(--text);
+            font-size: 0.94rem;
+            line-height: 1.62;
+            white-space: pre-wrap;
+        }
+
+        .message.right .bubble {
+            border-color: rgba(47, 111, 237, 0.28);
+            background: #eef4ff;
+        }
+
+        .message.agent1 .bubble {
+            border-left: 3px solid var(--agent-1);
+        }
+
+        .message.agent2 .bubble {
+            border-left: 3px solid var(--agent-2);
+        }
+
+        .message.agent3 .bubble {
+            border-left: 3px solid var(--agent-3);
+        }
+
+        .message.main .bubble {
+            border-left: 3px solid var(--main);
+        }
+
+        .composer {
+            display: flex;
+            width: min(800px, 100%);
+            gap: 10px;
+            margin: 0 auto 12px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 14px 36px rgba(32, 33, 35, 0.08);
+        }
+
+        #topicForm {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-areas:
+                "main-input main-send"
+                "agenda-start agenda-start";
+            align-items: center;
+        }
+
+        #mainInput {
+            grid-area: main-input;
+        }
+
+        #mainSendBtn {
+            grid-area: main-send;
+            white-space: nowrap;
+        }
+
+        #agendaStartBtn {
+            grid-area: agenda-start;
+            justify-self: end;
+        }
+
+        #agendaStartBtn[hidden] {
+            display: none;
+        }
+
+        .decision-board {
+            display: grid;
+            width: min(800px, 100%);
+            gap: 11px;
+            margin: 0 auto 12px;
+            padding: 13px 14px 12px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 14px 36px rgba(32, 33, 35, 0.06);
+        }
+
+        .decision-board.hidden {
+            display: none;
+        }
+
+        .decision-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .decision-head strong {
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .decision-head span {
+            color: var(--muted);
+            font-size: 0.74rem;
+            line-height: 1.35;
+        }
+
+        .decision-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .decision-option {
+            display: grid;
+            gap: 4px;
+            min-height: 66px;
+            padding: 10px 11px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #ffffff;
+            color: var(--text);
+            cursor: pointer;
+            text-align: left;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+        }
+
+        .decision-option:hover:not(:disabled) {
+            border-color: rgba(16, 163, 127, 0.48);
+            background: var(--accent-soft);
+            transform: translateY(-1px);
+        }
+
+        .decision-option:disabled {
+            cursor: not-allowed;
+            opacity: 0.58;
+        }
+
+        .decision-title {
+            font-size: 0.8rem;
+            font-weight: 750;
+        }
+
+        .decision-copy {
+            color: var(--muted);
+            font-size: 0.71rem;
+            line-height: 1.35;
+        }
+
+        .composer input {
+            min-width: 0;
+            flex: 1;
+            height: 44px;
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            outline: none;
+            background: #ffffff;
+            color: var(--text);
+            padding: 0 13px;
+        }
+
+        .composer input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.14);
+        }
+
+        .composer input:disabled {
+            background: #f1f1ec;
+            color: var(--quiet);
+        }
+
+        .runtime-card {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            border-bottom: 1px solid var(--line);
+            background: #fbfbf7;
+        }
+
+        .runtime-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .runtime-head strong {
+            font-size: 0.86rem;
+        }
+
+        .runtime-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 26px;
+            padding: 0 9px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--muted);
+            background: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .runtime-badge.ready {
+            border-color: rgba(16, 163, 127, 0.24);
+            color: #08745f;
+            background: var(--accent-soft);
+        }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .provider-option {
+            display: grid;
+            gap: 3px;
+            min-height: 58px;
+            padding: 9px 10px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #ffffff;
+            color: var(--text);
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .provider-option:hover {
+            border-color: var(--line-strong);
+            background: #f8f8f4;
+        }
+
+        .provider-option.active {
+            border-color: rgba(16, 163, 127, 0.5);
+            background: var(--accent-soft);
+            box-shadow: inset 0 0 0 1px rgba(16, 163, 127, 0.12);
+        }
+
+        .provider-name {
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .provider-copy {
+            color: var(--muted);
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+
+        .runtime-fields {
+            display: grid;
+            gap: 8px;
+        }
+
+        .runtime-fields.hidden {
+            display: none;
+        }
+
+        .runtime-fields input {
+            width: 100%;
+            height: 38px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            outline: none;
+            background: #ffffff;
+            color: var(--text);
+            padding: 0 11px;
+            font-size: 0.84rem;
+        }
+
+        .runtime-fields input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.12);
+        }
+
+        .runtime-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .runtime-actions .button {
+            min-height: 36px;
+            padding: 0 11px;
+            font-size: 0.82rem;
+        }
+
+        .runtime-card.setup-complete .provider-grid,
+        .runtime-card.setup-complete .runtime-fields,
+        .runtime-card.setup-complete #runtimeTestBtn {
+            display: none;
+        }
+
+        .runtime-hint {
+            min-height: 34px;
+            color: var(--muted);
+            font-size: 0.77rem;
+            line-height: 1.45;
+        }
+
+        .role-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .role-pill {
+            display: inline-flex;
+            align-items: center;
+            max-width: 190px;
+            gap: 8px;
+            min-height: 32px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            color: var(--muted);
+            background: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 650;
+        }
+
+        .role-dot {
+            flex: 0 0 auto;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--agent-1);
+        }
+
+        .role-pill span:last-child {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .role-pill.agent2 .role-dot {
+            background: var(--agent-2);
+        }
+
+        .role-pill.agent3 .role-dot {
+            background: var(--agent-3);
+        }
+
+        .empty-layer,
+        .orchestration {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            border-radius: var(--radius);
+            background: rgba(247, 247, 242, 0.94);
+            backdrop-filter: blur(10px);
+            transition: opacity 220ms ease, visibility 220ms ease;
+        }
+
+        .empty-layer.hidden,
+        .orchestration.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .empty-state {
+            max-width: 470px;
+            text-align: center;
+        }
+
+        .empty-state .mark {
+            margin: 0 auto 16px;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 8px;
+            font-size: 1.28rem;
+        }
+
+        .debate-panel {
+            position: relative;
+        }
+
+        .orchestration-inner {
+            width: min(760px, 100%);
+            text-align: center;
+        }
+
+        .orchestration-title {
+            margin-top: 12px;
+            font-size: 1.55rem;
+        }
+
+        .spawn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .spawn-card {
+            min-height: 150px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #ffffff;
+            padding: 16px;
+            text-align: left;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 220ms ease, transform 220ms ease, border-color 220ms ease;
+        }
+
+        .spawn-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+            border-color: var(--line-strong);
+        }
+
+        .spawn-card .avatar {
+            margin-bottom: 12px;
+        }
+
+        .spawn-card h3 {
+            margin: 0 0 6px;
+            font-size: 0.96rem;
+        }
+
+        .spawn-card p {
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        .typing {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            width: fit-content;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #ffffff;
+            padding: 12px 13px;
+        }
+
+        .typing span {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--muted);
+            animation: typing 900ms infinite ease-in-out;
+        }
+
+        .typing span:nth-child(2) {
+            animation-delay: 120ms;
+        }
+
+        .typing span:nth-child(3) {
+            animation-delay: 240ms;
+        }
+
+        @keyframes typing {
+            0%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.45;
+            }
+            50% {
+                transform: translateY(-3px);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 760px) {
+            body {
+                height: 100svh;
+                overflow: hidden;
+            }
+
+            .app {
+                grid-template-columns: 1fr;
+                height: 100svh;
+                min-height: 0;
+                padding-inline: 14px;
+            }
+
+            .panel {
+                min-height: 0;
+            }
+
+            .debate-panel {
+                min-height: 0;
+            }
+
+            .app.debate-mode {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(0, 1fr);
+            }
+
+            .app.debate-mode .main-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .app {
+                padding: 10px;
+            }
+
+            .panel-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .topic-title {
+                white-space: normal;
+            }
+
+            .role-strip {
+                justify-content: flex-start;
+            }
+
+            .decision-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .composer {
+                flex-direction: column;
+            }
+
+            #topicForm {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "main-input"
+                    "main-send"
+                    "agenda-start";
+            }
+
+            #agendaStartBtn {
+                justify-self: stretch;
+            }
+
+            .button,
+            .composer input {
+                width: 100%;
+            }
+
+            .spawn-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .message {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <section class="panel main-panel" aria-label="메인 에이전트">
+            <header class="panel-header">
+                <div class="title-row">
+                    <div class="mark"><i data-lucide="sparkles" size="18"></i></div>
+                    <div>
+                        <h1>Main Agent</h1>
+                        <p class="subcopy">주제 정리, 역할 배정, 토론 진행</p>
+                    </div>
+                </div>
+                <button class="button button-icon" id="resetButton" type="button" title="새 토론">
+                    <i data-lucide="rotate-ccw" size="17"></i>
+                </button>
+            </header>
+
+            <div class="runtime-store" id="openaiFields" hidden>
+                <input id="openaiApiKey" type="password" autocomplete="off">
+                <input id="openaiModel" type="text" autocomplete="off" value="gpt-5.5">
+                <input id="runtimeBaseUrl" type="text" autocomplete="off">
+            </div>
+
+            <div class="message-list" id="mainChatBox">
+                <article class="message main">
+                    <div class="message-meta">
+                        <span class="avatar"><i data-lucide="bot" size="14"></i></span>
+                        <span>Main Agent</span>
+                    </div>
+                    <p class="bubble">먼저 사업에서 어떤 결정을 내려야 하는지 방향을 골라주세요. 그다음 저와 짧게 대화하면서 토론할 질문을 좁히고, 준비되면 서브 에이전트들이 논의합니다.</p>
+                </article>
+            </div>
+
+            <div class="decision-board" id="decisionBoard" aria-label="사업 결정 방향 선택">
+                <div class="decision-head">
+                    <strong>먼저 방향을 고르세요</strong>
+                    <span>사업을 하다 막히는 결정부터 잡고 대화합니다.</span>
+                </div>
+                <div class="decision-grid" id="decisionGrid"></div>
+            </div>
+
+            <form class="composer" id="topicForm">
+                <input id="mainInput" type="text" autocomplete="off" placeholder="직접 입력하거나 위에서 사업 결정 방향을 고르세요.">
+                <button class="button button-primary" id="mainSendBtn" type="submit">
+                    <span>보내기</span>
+                    <i data-lucide="send" size="17"></i>
+                </button>
+                <button class="button" id="agendaStartBtn" type="button" hidden>
+                    <span>토론 시작</span>
+                    <i data-lucide="users" size="17"></i>
+                </button>
+            </form>
+        </section>
+
+        <section class="panel debate-panel" aria-label="토론방">
+            <div class="empty-layer" id="debateOverlay">
+                <div class="empty-state">
+                    <div class="mark"><i data-lucide="users" size="18"></i></div>
+                    <h2>토론방 대기 중</h2>
+                    <p class="subcopy">왼쪽에서 주제를 함께 좁히면 메인 에이전트가 역할을 나누고, 이곳에서 서브 에이전트들이 논의를 시작합니다.</p>
+                </div>
+            </div>
+
+            <div class="orchestration hidden" id="orchestrationView">
+                <div class="orchestration-inner">
+                    <div class="mark"><i data-lucide="network" size="18"></i></div>
+                    <h2 class="orchestration-title">메인 에이전트가 역할 배정 중</h2>
+                    <p class="subcopy" id="orchestrationReason">주제에 맞는 관점을 고르고 있습니다.</p>
+                    <div class="spawn-grid" id="spawnGrid">
+                        <article class="spawn-card" data-spawn="0"></article>
+                        <article class="spawn-card" data-spawn="1"></article>
+                        <article class="spawn-card" data-spawn="2"></article>
+                    </div>
+                </div>
+            </div>
+
+            <header class="panel-header">
+                <div class="topic-block">
+                    <p class="eyebrow">현재 토론 주제</p>
+                    <h2 class="topic-title" id="topicDisplay">주제 대기 중</h2>
+                    <p class="subcopy" id="debateStatus">아직 토론이 시작되지 않았습니다.</p>
+                </div>
+                <div class="role-strip" id="roleStrip">
+                    <div class="role-pill agent1"><span class="role-dot"></span><span>역할 대기</span></div>
+                    <div class="role-pill agent2"><span class="role-dot"></span><span>역할 대기</span></div>
+                    <div class="role-pill agent3"><span class="role-dot"></span><span>역할 대기</span></div>
+                </div>
+            </header>
+
+            <div class="message-list" id="debateChatBox"></div>
+
+            <form class="composer" id="debateForm">
+                <input id="debateInput" type="text" autocomplete="off" placeholder="토론 중간에 끼어들기: 질문, 반론, 조건 추가..." disabled>
+                <button class="button button-primary" id="debateSendBtn" type="submit" disabled>
+                    <span>개입</span>
+                    <i data-lucide="message-square-plus" size="17"></i>
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        const appShell = document.querySelector(".app");
+        const mainChatBox = document.getElementById("mainChatBox");
+        const debateChatBox = document.getElementById("debateChatBox");
+        const topicForm = document.getElementById("topicForm");
+        const debateForm = document.getElementById("debateForm");
+        const mainInput = document.getElementById("mainInput");
+        const mainSendBtn = document.getElementById("mainSendBtn");
+        const mainSendLabel = mainSendBtn.querySelector("span");
+        const agendaStartBtn = document.getElementById("agendaStartBtn");
+        const debateInput = document.getElementById("debateInput");
+        const debateSendBtn = document.getElementById("debateSendBtn");
+        const resetButton = document.getElementById("resetButton");
+        const debateOverlay = document.getElementById("debateOverlay");
+        const orchestrationView = document.getElementById("orchestrationView");
+        const orchestrationReason = document.getElementById("orchestrationReason");
+        const topicDisplay = document.getElementById("topicDisplay");
+        const debateStatus = document.getElementById("debateStatus");
+        const roleStrip = document.getElementById("roleStrip");
+        const spawnCards = Array.from(document.querySelectorAll(".spawn-card"));
+        const runtimeCard = document.querySelector(".runtime-card");
+        const providerButtons = Array.from(document.querySelectorAll(".provider-option"));
+        const openaiFields = document.getElementById("openaiFields");
+        const openaiApiKey = document.getElementById("openaiApiKey");
+        const openaiModel = document.getElementById("openaiModel");
+        const runtimeBaseUrl = document.getElementById("runtimeBaseUrl");
+        const runtimeBadge = document.getElementById("runtimeBadge");
+        const runtimeHint = document.getElementById("runtimeHint");
+        const runtimeTestBtn = document.getElementById("runtimeTestBtn");
+        const runtimeSetupLink = document.getElementById("runtimeSetupLink");
+        const decisionBoard = document.getElementById("decisionBoard");
+        const decisionGrid = document.getElementById("decisionGrid");
+
+        const runtimeStorageKey = "debate-runtime-preference";
+        const apiKeyStorageKey = (provider) => `debate-runtime-api-key-${provider}`;
+        const apiKeyProviders = new Set(["openai", "anthropic", "gemini", "openrouter"]);
+
+        const decisionTracks = [
+            {
+                id: "idea",
+                title: "아이디어 검증",
+                copy: "이 사업을 해도 되는지",
+                seed: "사업 아이디어 검증",
+                topicDraft: "이 사업 아이디어가 실제 고객 문제를 충분히 해결하며 지금 검증할 가치가 있는가?",
+                opening: "좋아요. 아이디어 검증부터 보겠습니다. 아이디어를 한 문장으로 말해주세요. 제가 고객 문제, 시장성, 차별화, 실패 기준 중 무엇을 먼저 토론해야 할지 좁혀볼게요.",
+                placeholder: "아이디어를 한 문장으로 적어주세요.",
+            },
+            {
+                id: "mvp",
+                title: "MVP / 기능",
+                copy: "무엇부터 만들지",
+                seed: "MVP와 기능 우선순위",
+                topicDraft: "첫 버전에서 어떤 기능을 반드시 만들고 무엇을 과감히 빼야 하는가?",
+                opening: "좋아요. MVP 범위를 잡아보겠습니다. 만들고 싶은 제품과 지금 고민 중인 기능들을 짧게 적어주세요. 제가 첫 버전, 제외할 기능, 수동 검증 가능성을 나눠보겠습니다.",
+                placeholder: "제품과 고민 중인 기능을 적어주세요.",
+            },
+            {
+                id: "customer",
+                title: "고객 / 시장",
+                copy: "누구에게 팔지",
+                seed: "고객, 시장, 포지셔닝",
+                topicDraft: "초기 고객을 누구로 잡아야 가장 빠르게 문제와 지불 의사를 검증할 수 있는가?",
+                opening: "좋아요. 고객과 시장부터 정리해볼게요. 누가 쓸 것 같은지, 혹은 후보 고객군이 여러 개라면 그대로 적어주세요.",
+                placeholder: "고객 후보나 시장을 적어주세요.",
+            },
+            {
+                id: "pricing",
+                title: "가격 / 수익모델",
+                copy: "어떻게 돈을 받을지",
+                seed: "가격과 수익모델",
+                topicDraft: "초기 제품에서 어떤 가격 구조와 과금 타이밍이 고객 저항과 수익성을 가장 잘 균형 잡는가?",
+                opening: "좋아요. 가격과 수익모델을 보겠습니다. 지금 생각 중인 가격, 무료/유료 구조, 고객이 돈을 낼 순간을 말해주세요.",
+                placeholder: "가격 고민이나 수익모델 후보를 적어주세요.",
+            },
+            {
+                id: "growth",
+                title: "마케팅 / 첫 고객",
+                copy: "처음 10명을 어떻게 만들지",
+                seed: "마케팅과 첫 고객 확보",
+                topicDraft: "초기 고객을 얻기 위해 어떤 채널과 메시지를 먼저 시험해야 하는가?",
+                opening: "좋아요. 첫 고객 확보를 보겠습니다. 지금 접근 가능한 채널이나 고객을 만날 수 있는 장소가 있으면 말해주세요.",
+                placeholder: "시도할 채널이나 고객 접근법을 적어주세요.",
+            },
+            {
+                id: "execution",
+                title: "실행 / 운영",
+                copy: "시간과 리스크를 어떻게 쓸지",
+                seed: "실행과 운영 판단",
+                topicDraft: "지금 가진 시간, 돈, 인력 안에서 무엇을 직접 하고 무엇을 미뤄야 하는가?",
+                opening: "좋아요. 실행과 운영 판단으로 보겠습니다. 지금 가진 시간, 예산, 혼자 하는지 팀이 있는지부터 말해주세요.",
+                placeholder: "시간, 예산, 팀 상황을 적어주세요.",
+            },
+            {
+                id: "pivot",
+                title: "피벗 / 중단",
+                copy: "계속할지 바꿀지",
+                seed: "피벗, 중단, 확장 판단",
+                topicDraft: "현재 신호를 기준으로 계속 밀어붙일지, 방향을 바꿀지, 중단할지 어떻게 판단해야 하는가?",
+                opening: "좋아요. 계속할지 바꿀지 판단해보겠습니다. 지금까지의 반응, 지표, 막힌 지점을 편하게 적어주세요.",
+                placeholder: "현재 반응이나 막힌 지점을 적어주세요.",
+            },
+        ];
+
+        const iconForSender = {
+            main: "bot",
+            user: "user",
+            agent1: "shield-alert",
+            agent2: "lightbulb",
+            agent3: "scale",
+        };
+
+        const roleSets = [
+            {
+                match: ["ai", "agi", "자동화", "데이터", "보안", "기술", "모델", "알고리즘"],
+                reason: "기술 도입 이슈로 판단해 리스크, 구현, 사용자 영향을 분리했습니다.",
+                roles: [
+                    {
+                        id: "agent1",
+                        name: "리스크 검토자",
+                        purpose: "보안, 오작동, 책임 소재를 먼저 확인합니다.",
+                        lens: "도입 전에 막아야 할 실패 조건",
+                    },
+                    {
+                        id: "agent2",
+                        name: "구현 전략가",
+                        purpose: "지금 만들 수 있는 작은 실험과 기술 경로를 제안합니다.",
+                        lens: "작게 검증할 수 있는 실행안",
+                    },
+                    {
+                        id: "agent3",
+                        name: "사용자 영향 분석가",
+                        purpose: "실제 사용자가 겪을 불편, 신뢰, 수용성을 따집니다.",
+                        lens: "사용자 경험과 신뢰",
+                    },
+                ],
+            },
+            {
+                match: ["법", "규제", "정책", "윤리", "공공", "책임", "금지"],
+                reason: "규범과 책임이 큰 의제로 판단해 윤리, 실행, 공익 관점을 배정했습니다.",
+                roles: [
+                    {
+                        id: "agent1",
+                        name: "윤리 감시자",
+                        purpose: "피해 가능성, 공정성, 책임 소재를 점검합니다.",
+                        lens: "넘지 말아야 할 선",
+                    },
+                    {
+                        id: "agent2",
+                        name: "현실 실행가",
+                        purpose: "규칙을 지키면서 가능한 운영 방식을 찾습니다.",
+                        lens: "현장에서 굴러가는 대안",
+                    },
+                    {
+                        id: "agent3",
+                        name: "공익 조율자",
+                        purpose: "이해관계자 사이의 균형점과 합의 조건을 정리합니다.",
+                        lens: "사회적 수용성",
+                    },
+                ],
+            },
+            {
+                match: ["사업", "수익", "가격", "시장", "고객", "제품", "mvp", "서비스", "투자"],
+                reason: "사업 판단 의제로 보고 시장성, 실행성, 고객 가치를 나눠 보겠습니다.",
+                roles: [
+                    {
+                        id: "agent1",
+                        name: "시장 회의론자",
+                        purpose: "고객이 정말 돈과 시간을 쓸 이유가 있는지 따집니다.",
+                        lens: "수요와 경쟁 리스크",
+                    },
+                    {
+                        id: "agent2",
+                        name: "실행 설계자",
+                        purpose: "가장 작은 출시 범위와 검증 순서를 제안합니다.",
+                        lens: "MVP와 운영 흐름",
+                    },
+                    {
+                        id: "agent3",
+                        name: "고객 대변자",
+                        purpose: "사용자의 실제 맥락과 반복 사용 이유를 확인합니다.",
+                        lens: "고객 가치",
+                    },
+                ],
+            },
+            {
+                match: [],
+                reason: "일반 의제로 보고 반대, 대안, 조율 관점을 기본 배정했습니다.",
+                roles: [
+                    {
+                        id: "agent1",
+                        name: "비판적 검토자",
+                        purpose: "숨은 가정과 실패 가능성을 날카롭게 지적합니다.",
+                        lens: "리스크와 반례",
+                    },
+                    {
+                        id: "agent2",
+                        name: "대안 제안자",
+                        purpose: "반대 의견을 피하지 않고 다른 선택지를 제시합니다.",
+                        lens: "가능한 해법",
+                    },
+                    {
+                        id: "agent3",
+                        name: "합의 조율자",
+                        purpose: "논점을 묶고 다음 결정을 위한 기준을 정리합니다.",
+                        lens: "판단 기준과 결론",
+                    },
+                ],
+            },
+        ];
+
+        let state = {
+            topic: "",
+            displayTopic: "",
+            pendingTopic: "",
+            clarificationAnswer: "",
+            selectedDecisionTrack: "",
+            agendaMessages: [],
+            agendaState: null,
+            agendaSummary: "",
+            agendaTopicDraft: "",
+            agendaReady: false,
+            rolePlanPreview: null,
+            rolePlanPreviewKey: "",
+            agendaBusy: false,
+            phase: "idle",
+            roles: roleSets[3].roles,
+            sessionId: "",
+            queue: [],
+            activeTimer: null,
+            activeTyping: null,
+            agendaAbortController: null,
+            streamController: null,
+            busy: false,
+            runtime: {
+                provider: "mock",
+                model: "gpt-5.5",
+                baseUrl: "http://127.0.0.1:11434",
+                apiKey: "",
+                ready: false,
+                setupComplete: false,
+            },
+            runtimeOptions: null,
+            debateStarted: false,
+            turn: 0,
+        };
+
+        function initIcons() {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }
+
+        function syncLayoutMode() {
+            appShell.classList.toggle("chat-focus", !state.debateStarted);
+            appShell.classList.toggle("debate-mode", state.debateStarted);
+        }
+
+        function scrollToBottom(container) {
+            window.setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 20);
+        }
+
+        function renderMessage(container, text, sender, roleName, alignRight = false) {
+            const article = document.createElement("article");
+            article.className = `message ${sender}${alignRight ? " right" : ""}`;
+
+            const meta = document.createElement("div");
+            meta.className = "message-meta";
+
+            const avatar = document.createElement("span");
+            avatar.className = `avatar ${sender === "user" ? "user" : sender}`;
+            avatar.innerHTML = `<i data-lucide="${iconForSender[sender] || "circle"}" size="14"></i>`;
+
+            const name = document.createElement("span");
+            name.textContent = roleName;
+
+            const bubble = document.createElement("p");
+            bubble.className = "bubble";
+            bubble.textContent = text;
+
+            meta.append(avatar, name);
+            article.append(meta, bubble);
+            container.appendChild(article);
+            initIcons();
+            scrollToBottom(container);
+        }
+
+        function renderTyping(container, sender = "main") {
+            const wrapper = document.createElement("div");
+            wrapper.className = `message ${sender}`;
+
+            const typing = document.createElement("div");
+            typing.className = "typing";
+            typing.innerHTML = "<span></span><span></span><span></span>";
+
+            wrapper.appendChild(typing);
+            container.appendChild(wrapper);
+            scrollToBottom(container);
+            return wrapper;
+        }
+
+        function clearActiveTyping() {
+            if (state.activeTimer) {
+                window.clearTimeout(state.activeTimer);
+                state.activeTimer = null;
+            }
+            if (state.activeTyping) {
+                state.activeTyping.remove();
+                state.activeTyping = null;
+            }
+        }
+
+        function classifyTopic(topic) {
+            const normalized = topic.toLowerCase();
+            return roleSets.find((set) => set.match.some((word) => normalized.includes(word))) || roleSets[3];
+        }
+
+        function renderRoleStrip(roles) {
+            roleStrip.innerHTML = "";
+            roles.forEach((role, index) => {
+                const pill = document.createElement("div");
+                pill.className = `role-pill agent${index + 1}`;
+
+                const dot = document.createElement("span");
+                dot.className = "role-dot";
+
+                const label = document.createElement("span");
+                label.textContent = role.name;
+
+                pill.append(dot, label);
+                roleStrip.appendChild(pill);
+            });
+        }
+
+        function renderSpawnCards(roles) {
+            roles.forEach((role, index) => {
+                const card = spawnCards[index];
+                card.className = "spawn-card";
+                card.innerHTML = "";
+
+                const avatar = document.createElement("span");
+                avatar.className = `avatar agent${index + 1}`;
+                avatar.innerHTML = `<i data-lucide="${iconForSender[role.id]}" size="15"></i>`;
+
+                const heading = document.createElement("h3");
+                heading.textContent = role.name;
+
+                const copy = document.createElement("p");
+                copy.textContent = role.assignment || role.purpose;
+
+                card.append(avatar, heading, copy);
+            });
+            initIcons();
+        }
+
+        function normalizeRolePlan(plan) {
+            if (!plan || !Array.isArray(plan.roles) || plan.roles.length < 3) return null;
+            return {
+                reason: String(plan.reason || "메인 에이전트가 주제에 맞는 관점을 배정했습니다.").trim(),
+                source: String(plan.source || "local").trim(),
+                roles: plan.roles.slice(0, 3).map((role, index) => ({
+                    id: role.id || `agent${index + 1}`,
+                    name: String(role.name || `서브 에이전트 ${index + 1}`).trim(),
+                    purpose: String(role.purpose || role.description || "이 관점으로 검토합니다.").trim(),
+                    lens: String(role.lens || role.purpose || "판단 기준").trim(),
+                    assignment: String(role.assignment || role.instruction || role.purpose || "핵심 쟁점을 검토합니다.").trim(),
+                    callSignal: String(role.callSignal || role.reason || role.lens || "다른 관점을 분리해서 보기 위해 호출합니다.").trim(),
+                    color: role.color,
+                })),
+            };
+        }
+
+        function localRolePlanForAgenda(topic) {
+            if (state.selectedDecisionTrack === "customer") {
+                const candidates = Array.isArray(state.agendaState?.memory?.candidates)
+                    ? state.agendaState.memory.candidates
+                    : [];
+                const product = state.agendaState?.memory?.product || "제품/서비스";
+                const first = candidates[0] || "첫 후보 고객";
+                const second = candidates[1] || "다른 후보 고객";
+                return normalizeRolePlan({
+                    reason: "고객/시장 결정으로 보고 후보 고객군, 구매 가능성, 검증 실험을 나누어 봅니다.",
+                    source: "local",
+                    roles: [
+                        {
+                            id: "agent1",
+                            name: `${first} 시장 옹호자`,
+                            purpose: `${product}를 ${first}에게 먼저 팔 때의 강점과 접근 경로를 주장합니다.`,
+                            lens: `${first}의 문제 절박도`,
+                            assignment: `${first} 고객군의 강점, 접근 경로, 먼저 팔아야 하는 이유를 맡깁니다.`,
+                            callSignal: `${first} 관점을 독립적으로 보기 위해 호출합니다.`,
+                        },
+                        {
+                            id: "agent2",
+                            name: `${second} 시장 옹호자`,
+                            purpose: `${product}를 ${second}에게 먼저 팔 때의 강점과 구매 가능성을 주장합니다.`,
+                            lens: `${second}의 지불 의사`,
+                            assignment: `${second} 고객군의 강점, 구매 가능성, 반대 논리를 맡깁니다.`,
+                            callSignal: `${second} 관점을 독립적으로 보기 위해 호출합니다.`,
+                        },
+                        {
+                            id: "agent3",
+                            name: "구매검증 설계자",
+                            purpose: "두 고객군 중 누가 실제로 돈과 시간을 쓸지 가장 작게 확인할 실험을 설계합니다.",
+                            lens: "검증 순서와 성공 기준",
+                            assignment: "고객 인터뷰, 랜딩, 선결제 같은 최소 검증 실험을 제안합니다.",
+                            callSignal: "논의를 실제 검증 행동으로 바꾸기 위해 호출합니다.",
+                        },
+                    ],
+                });
+            }
+            const context = [
+                topic,
+                state.agendaTopicDraft,
+                state.agendaSummary,
+                agendaTranscriptForTopic(),
+            ].filter(Boolean).join("\n");
+            const base = classifyTopic(context);
+            return normalizeRolePlan({
+                reason: base.reason,
+                source: "local",
+                roles: base.roles.map((role) => ({
+                    ...role,
+                    assignment: `${role.purpose} 특히 "${role.lens}" 관점에서 첫 발언을 맡깁니다.`,
+                    callSignal: `${role.lens}을 따로 분리해서 보기 위해 호출합니다.`,
+                })),
+            });
+        }
+
+        function rolePlanKey(plan) {
+            if (!plan) return "";
+            return [plan.reason, ...plan.roles.map((role) => `${role.name}:${role.assignment}`)].join("|");
+        }
+
+        function formatRolePlanPreview(plan) {
+            const lines = plan.roles.map((role, index) => {
+                return `${index + 1}. ${role.name}\n   임무: ${role.assignment || role.purpose}\n   호출 이유: ${role.callSignal || role.lens}`;
+            });
+            return [
+                "판단은 여기까지면 충분합니다. 이 의제로 토론을 열 때는 아래 서브 에이전트들을 호출하겠습니다.",
+                "",
+                `메인 판단: ${plan.reason}`,
+                "",
+                "역할 배정:",
+                ...lines,
+            ].join("\n");
+        }
+
+        function setAgendaRolePlan(plan, { announce = true } = {}) {
+            const normalized = normalizeRolePlan(plan);
+            if (!normalized) return;
+            const key = rolePlanKey(normalized);
+            state.rolePlanPreview = normalized;
+            state.rolePlanPreviewKey = key;
+            state.roles = normalized.roles;
+            renderRoleStrip(state.roles);
+            renderSpawnCards(state.roles);
+            if (announce) {
+                renderMessage(mainChatBox, formatRolePlanPreview(normalized), "main", "Main Agent", false);
+                state.agendaMessages.push({ role: "main", content: formatRolePlanPreview(normalized) });
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise((resolve) => window.setTimeout(resolve, ms));
+        }
+
+        function setMainComposerEnabled(enabled) {
+            mainInput.disabled = !enabled;
+            mainSendBtn.disabled = !enabled;
+            setDecisionBoardEnabled(enabled && state.phase === "idle" && !state.pendingTopic);
+            updateAgendaStartButton();
+        }
+
+        function setMainSubmitLabel(text) {
+            if (mainSendLabel) {
+                mainSendLabel.textContent = text;
+            }
+        }
+
+        function setMainSubmitIcon(iconName) {
+            const icon = mainSendBtn.querySelector("i");
+            if (icon) {
+                icon.setAttribute("data-lucide", iconName);
+                initIcons();
+            }
+        }
+
+        function setMainStopMode(enabled) {
+            if (enabled) {
+                mainInput.disabled = true;
+                mainSendBtn.disabled = false;
+                setMainSubmitLabel("중지");
+                setMainSubmitIcon("square");
+                return;
+            }
+            setMainSubmitLabel("보내기");
+            setMainSubmitIcon("send");
+        }
+
+        function stopMainAgendaTurn() {
+            if (!state.agendaBusy || !state.agendaAbortController) return;
+            state.agendaAbortController.abort();
+            state.agendaAbortController = null;
+            clearActiveTyping();
+            mainInput.placeholder = "응답을 멈췄습니다. 이어서 입력하세요.";
+        }
+
+        function updateAgendaStartButton() {
+            const canShow = state.phase === "agenda" && Boolean(state.pendingTopic) && !state.debateStarted;
+            agendaStartBtn.hidden = !canShow;
+            agendaStartBtn.disabled = !canShow || !state.agendaReady || !state.runtime.ready || state.busy || state.agendaBusy;
+        }
+
+        function renderDecisionTracks() {
+            decisionGrid.innerHTML = "";
+            decisionTracks.forEach((track) => {
+                const button = document.createElement("button");
+                button.className = "decision-option";
+                button.type = "button";
+                button.dataset.track = track.id;
+
+                const title = document.createElement("span");
+                title.className = "decision-title";
+                title.textContent = track.title;
+
+                const copy = document.createElement("span");
+                copy.className = "decision-copy";
+                copy.textContent = track.copy;
+
+                button.append(title, copy);
+                button.addEventListener("click", () => beginDecisionTrack(track.id));
+                decisionGrid.appendChild(button);
+            });
+            setDecisionBoardEnabled(state.runtime.ready && !state.busy && !state.debateStarted);
+        }
+
+        function setDecisionBoardVisible(visible) {
+            decisionBoard.classList.toggle("hidden", !visible);
+        }
+
+        function setDecisionBoardEnabled(enabled) {
+            decisionGrid.querySelectorAll("button").forEach((button) => {
+                button.disabled = !enabled;
+            });
+        }
+
+        function beginDecisionTrack(trackId) {
+            const track = decisionTracks.find((item) => item.id === trackId);
+            if (!track || state.busy || !state.runtime.ready || state.debateStarted) return;
+
+            state.selectedDecisionTrack = track.id;
+            state.pendingTopic = track.seed;
+            state.displayTopic = track.seed;
+            state.agendaTopicDraft = track.topicDraft;
+            state.agendaSummary = `선택한 사업 결정 방향: ${track.title}\n메인이 제안한 토론 질문: ${track.topicDraft}`;
+            state.agendaMessages = [
+                { role: "user", content: `[방향: ${track.title}] ${track.seed}` },
+                { role: "main", content: track.opening },
+            ];
+            state.agendaState = {
+                version: 1,
+                track: track.id,
+                trackLabel: track.title,
+                memory: {
+                    selectedDirection: track.title,
+                    debateQuestion: track.topicDraft,
+                },
+            };
+            state.agendaReady = false;
+            state.rolePlanPreview = null;
+            state.rolePlanPreviewKey = "";
+            state.phase = "agenda";
+
+            setDecisionBoardVisible(false);
+            renderMessage(mainChatBox, track.title, "user", "사용자", true);
+            renderMessage(mainChatBox, track.opening, "main", "Main Agent", false);
+            mainInput.placeholder = track.placeholder;
+            setMainComposerEnabled(true);
+            updateAgendaStartButton();
+            mainInput.focus();
+        }
+
+        function setDebateComposerEnabled(enabled) {
+            debateInput.disabled = !enabled;
+            debateSendBtn.disabled = !enabled;
+        }
+
+        function runtimePayload() {
+            const provider = state.runtime.provider;
+            const key =
+                openaiApiKey.value.trim() ||
+                window.sessionStorage.getItem(apiKeyStorageKey(provider)) ||
+                (provider === "openai" ? window.sessionStorage.getItem("debate-openai-api-key") || "" : "");
+            return {
+                provider,
+                model: openaiModel.value.trim() || state.runtime.model,
+                baseUrl: runtimeBaseUrl.value.trim() || state.runtime.baseUrl,
+                apiKey: apiKeyProviders.has(provider) ? key : "",
+            };
+        }
+
+        function saveRuntimePreference() {
+            const preference = {
+                provider: state.runtime.provider,
+                model: openaiModel.value.trim() || state.runtime.model,
+                baseUrl: runtimeBaseUrl.value.trim() || state.runtime.baseUrl,
+                ready: Boolean(state.runtime.ready),
+                testedAt: state.runtime.ready ? new Date().toISOString() : "",
+            };
+            window.localStorage.setItem(runtimeStorageKey, JSON.stringify(preference));
+
+            if (apiKeyProviders.has(state.runtime.provider)) {
+                const key = openaiApiKey.value.trim();
+                if (key) {
+                    window.sessionStorage.setItem(apiKeyStorageKey(state.runtime.provider), key);
+                    if (state.runtime.provider === "openai") {
+                        window.sessionStorage.setItem("debate-openai-api-key", key);
+                    }
+                } else {
+                    window.sessionStorage.removeItem(apiKeyStorageKey(state.runtime.provider));
+                    if (state.runtime.provider === "openai") {
+                        window.sessionStorage.removeItem("debate-openai-api-key");
+                    }
+                }
+            }
+        }
+
+        function loadRuntimePreference() {
+            let saved = {};
+            try {
+                saved = JSON.parse(window.localStorage.getItem(runtimeStorageKey) || "{}");
+            } catch {
+                saved = {};
+            }
+            const hasSavedRuntime = Boolean(saved.provider && saved.ready);
+            const provider = saved.provider || state.runtime.provider;
+            const sessionKey =
+                window.sessionStorage.getItem(apiKeyStorageKey(provider)) ||
+                (provider === "openai" ? window.sessionStorage.getItem("debate-openai-api-key") || "" : "");
+            state.runtime.provider = saved.provider || state.runtime.provider;
+            state.runtime.model = saved.model || state.runtime.model;
+            state.runtime.baseUrl = saved.baseUrl || state.runtime.baseUrl;
+            state.runtime.ready = Boolean(saved.ready);
+            state.runtime.setupComplete = Boolean(saved.ready && saved.provider);
+            openaiModel.value = state.runtime.model;
+            runtimeBaseUrl.value = state.runtime.baseUrl;
+            openaiApiKey.value = sessionKey;
+            return hasSavedRuntime;
+        }
+
+        function providerDetail(provider) {
+            return state.runtimeOptions?.providers?.[provider]?.detail || "";
+        }
+
+        function providerReadyByDefault(provider) {
+            if (provider === "mock") return true;
+            if (apiKeyProviders.has(provider) && window.sessionStorage.getItem(apiKeyStorageKey(provider))) return true;
+            if (provider === "openai" && window.sessionStorage.getItem("debate-openai-api-key")) return true;
+            return Boolean(state.runtimeOptions?.providers?.[provider]?.ready);
+        }
+
+        function renderRuntime() {
+            setMainComposerEnabled(state.runtime.ready && !state.busy && !state.debateStarted && !state.agendaBusy);
+            initIcons();
+        }
+
+        function selectRuntime(provider) {
+            state.runtime.provider = provider;
+            state.runtime.model =
+                state.runtimeOptions?.defaultModels?.[provider] ||
+                state.runtimeOptions?.providers?.[provider]?.model ||
+                state.runtime.model;
+            state.runtime.baseUrl =
+                state.runtimeOptions?.providers?.[provider]?.baseUrl ||
+                state.runtimeOptions?.defaultBaseUrls?.ollama ||
+                state.runtime.baseUrl;
+            openaiModel.value = state.runtime.model;
+            runtimeBaseUrl.value = state.runtime.baseUrl;
+            state.runtime.setupComplete = false;
+            openaiApiKey.value =
+                window.sessionStorage.getItem(apiKeyStorageKey(provider)) ||
+                (provider === "openai" ? window.sessionStorage.getItem("debate-openai-api-key") || "" : "");
+            state.runtime.ready = providerReadyByDefault(provider);
+            saveRuntimePreference();
+            renderRuntime();
+        }
+
+        async function loadRuntimeOptions() {
+            try {
+                const response = await fetch("/api/debate-lite/runtime/options");
+                const options = await response.json();
+                state.runtimeOptions = options;
+                if (!window.localStorage.getItem(runtimeStorageKey)) {
+                    state.runtime.provider = options.defaultProvider || "openai";
+                    state.runtime.model = options.defaultModels?.[state.runtime.provider] || options.defaultOpenAIModel || state.runtime.model;
+                    state.runtime.baseUrl = options.defaultBaseUrls?.ollama || state.runtime.baseUrl;
+                    openaiModel.value = state.runtime.model;
+                    runtimeBaseUrl.value = state.runtime.baseUrl;
+                }
+                if (!state.runtime.model) {
+                    state.runtime.model = options.defaultModels?.[state.runtime.provider] || "";
+                    openaiModel.value = state.runtime.model;
+                }
+                state.runtime.ready = Boolean(state.runtime.ready || providerReadyByDefault(state.runtime.provider));
+            } catch {
+                state.runtimeOptions = null;
+                state.runtime.ready = state.runtime.provider === "mock";
+            }
+            renderRuntime();
+        }
+
+        async function testRuntime() {
+            runtimeTestBtn.disabled = true;
+            runtimeBadge.textContent = "테스트 중";
+            runtimeBadge.classList.remove("ready");
+            runtimeHint.textContent = "선택한 AI 연결을 확인하고 있습니다.";
+            let detailMessage = "";
+
+            try {
+                const result = await postJson("/api/debate-lite/runtime/test", { runtime: runtimePayload() });
+                state.runtime.ready = Boolean(result.ok);
+                state.runtime.model = openaiModel.value.trim() || state.runtime.model;
+                state.runtime.baseUrl = runtimeBaseUrl.value.trim() || state.runtime.baseUrl;
+                state.runtime.setupComplete = Boolean(result.ok);
+                saveRuntimePreference();
+                detailMessage = result.detail || "연결 테스트를 통과했습니다.";
+            } catch (error) {
+                state.runtime.ready = false;
+                state.runtime.setupComplete = false;
+                detailMessage = error instanceof Error ? error.message : "연결 테스트에 실패했습니다.";
+            } finally {
+                runtimeTestBtn.disabled = false;
+                renderRuntime();
+                runtimeHint.textContent = detailMessage;
+            }
+        }
+
+        function senderForRoleId(roleId) {
+            if (roleId === "main") return "main";
+            if (roleId === "human") return "user";
+            if (iconForSender[roleId]) return roleId;
+            const index = state.roles.findIndex((role) => role.id === roleId);
+            return index >= 0 ? `agent${index + 1}` : "agent1";
+        }
+
+        function roleNameForMessage(message) {
+            if (message.roleName) return message.roleName;
+            if (message.roleId === "main") return "Main Agent";
+            if (message.roleId === "human") return "사용자 개입";
+            const role = state.roles.find((item) => item.id === message.roleId);
+            return role?.name || "Sub Agent";
+        }
+
+        function applyRolePlan(reason, roles) {
+            const plan = normalizeRolePlan({ reason, roles }) || state.rolePlanPreview;
+            if (plan) {
+                state.rolePlanPreview = plan;
+                state.rolePlanPreviewKey = rolePlanKey(plan);
+                state.roles = plan.roles;
+            } else {
+                state.roles = Array.isArray(roles) && roles.length ? roles : state.roles;
+            }
+            orchestrationReason.textContent = plan?.reason || reason || "메인 에이전트가 주제에 맞는 관점을 배정했습니다.";
+            renderRoleStrip(state.roles);
+            renderSpawnCards(state.roles);
+
+            debateOverlay.classList.add("hidden");
+            orchestrationView.classList.remove("hidden");
+            spawnCards.forEach((card, index) => {
+                window.setTimeout(() => card.classList.add("visible"), 160 + index * 220);
+            });
+            window.setTimeout(() => orchestrationView.classList.add("hidden"), 1300);
+        }
+
+        async function postJson(url, payload, options = {}) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+                signal: options.signal,
+            });
+            if (!response.ok) {
+                const text = await response.text();
+                let message = text;
+                try {
+                    const parsed = JSON.parse(text);
+                    message = parsed.detail || parsed.error || message;
+                } catch {}
+                throw new Error(message || "요청을 처리하지 못했습니다.");
+            }
+            return response.json();
+        }
+
+        async function readNdjsonStream(response, onEvent) {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || "토론을 시작하지 못했습니다.");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    await onEvent(JSON.parse(line));
+                }
+            }
+
+            if (buffer.trim()) {
+                await onEvent(JSON.parse(buffer));
+            }
+        }
+
+        function renderMessagePayload(message) {
+            renderMessage(
+                debateChatBox,
+                message.content,
+                senderForRoleId(message.roleId),
+                roleNameForMessage(message),
+                message.roleId === "human",
+            );
+        }
+
+        async function handleLiteEvent(event) {
+            if (event.type === "session") {
+                state.sessionId = event.session?.id || "";
+                state.debateStarted = true;
+                setDebateComposerEnabled(true);
+                debateStatus.textContent = "메인 에이전트가 역할을 배정했습니다. 토론 중 언제든 끼어들 수 있습니다.";
+                return;
+            }
+
+            if (event.type === "runtime") {
+                if (event.runtime?.provider) {
+                    state.runtime.provider = event.runtime.provider;
+                    state.runtime.ready = true;
+                    if (event.runtime.model) {
+                        state.runtime.model = event.runtime.model;
+                        openaiModel.value = event.runtime.model;
+                    }
+                    renderRuntime();
+                }
+                return;
+            }
+
+            if (event.type === "roles") {
+                applyRolePlan(event.reason, event.roles);
+                return;
+            }
+
+            if (event.type === "main") {
+                clearActiveTyping();
+                renderMessage(mainChatBox, event.message.content, "main", "Main Agent", false);
+                return;
+            }
+
+            if (event.type === "role_start") {
+                clearActiveTyping();
+                debateStatus.textContent = `${event.roleName || "Agent"} 발언 준비 중`;
+                state.activeTyping = renderTyping(debateChatBox, senderForRoleId(event.roleId));
+                return;
+            }
+
+            if (event.type === "message") {
+                clearActiveTyping();
+                renderMessagePayload(event.message);
+                debateStatus.textContent = `${roleNameForMessage(event.message)} 발언 완료`;
+                return;
+            }
+
+            if (event.type === "report") {
+                clearActiveTyping();
+                if (event.report?.summary) {
+                    renderMessage(debateChatBox, `정리: ${event.report.summary}`, "main", "Main Agent", false);
+                }
+                debateStatus.textContent = "토론이 잠시 멈췄습니다. 아래 입력창으로 새 관점을 던질 수 있습니다.";
+                return;
+            }
+
+            if (event.type === "done") {
+                state.busy = false;
+                state.phase = "done";
+                state.streamController = null;
+                setDebateComposerEnabled(true);
+                debateStatus.textContent = "토론이 잠시 멈췄습니다. 아래 입력창으로 새 관점을 던질 수 있습니다.";
+                return;
+            }
+
+            if (event.type === "error") {
+                throw new Error(event.error || "토론 중 오류가 발생했습니다.");
+            }
+        }
+
+        async function renderResponseMessages(messages) {
+            for (const message of messages) {
+                clearActiveTyping();
+                debateStatus.textContent = `${roleNameForMessage(message)} 발언 준비 중`;
+                state.activeTyping = renderTyping(debateChatBox, senderForRoleId(message.roleId));
+                await sleep(360);
+                clearActiveTyping();
+                renderMessagePayload(message);
+            }
+        }
+
+        function mainDecisionText(topic, roleSet) {
+            const roleLines = roleSet.roles
+                .map((role) => `${role.name}: ${role.purpose}`)
+                .join("\n");
+            return `"${topic}"은 이제 토론을 시작해도 좋은 주제입니다.\n\n메인 판단: ${roleSet.reason}\n\n배정된 역할\n${roleLines}`;
+        }
+
+        function buildDebateQueue(topic, roles) {
+            const [first, second, third] = roles;
+            return [
+                {
+                    sender: "main",
+                    role: "Main Agent",
+                    text: `토론 주제를 확정했습니다. 지금부터 ${roles.map((role) => role.name).join(", ")} 순서로 토론을 진행하겠습니다. 사람이 중간에 끼어들면 그 발언을 다음 턴에 반영합니다.`,
+                    delay: 650,
+                },
+                {
+                    sender: first.id,
+                    role: `${first.name} (Agent 1)`,
+                    text: `먼저 "${topic}"에서 가장 조심해야 할 지점은 ${first.lens}입니다. 이 사안은 좋은 의도만으로 밀어붙이면 핵심 위험이 늦게 드러날 수 있습니다. 시작 조건, 실패 기준, 중단 기준을 먼저 정해야 합니다.`,
+                    delay: 1000,
+                },
+                {
+                    sender: second.id,
+                    role: `${second.name} (Agent 2)`,
+                    text: `동의합니다. 다만 멈춰서 검토만 하기보다 작은 실험으로 판단 근거를 만들어야 합니다. 저는 "${topic}"을 전면 도입이 아니라 제한된 사용자, 짧은 기간, 명확한 성공 지표로 검증하는 방식을 제안합니다.`,
+                    delay: 1250,
+                },
+                {
+                    sender: third.id,
+                    role: `${third.name} (Agent 3)`,
+                    text: `두 관점을 합치면 지금 필요한 질문은 하나입니다. 이 토론 주제가 성공했다고 말할 수 있는 최소 증거는 무엇인가요? 그 기준을 정하면 찬반이 아니라 다음 행동으로 논의가 이동합니다.`,
+                    delay: 1300,
+                },
+                {
+                    sender: first.id,
+                    role: `${first.name} (Agent 1)`,
+                    text: `추가로 확인하고 싶은 것은 되돌릴 수 있는지입니다. "${topic}"이 기대와 다르게 작동했을 때 누가 영향을 받고, 어떤 절차로 원상복구할 수 있는지 빠지면 토론이 너무 낙관적으로 흐릅니다.`,
+                    delay: 1500,
+                },
+                {
+                    sender: second.id,
+                    role: `${second.name} (Agent 2)`,
+                    text: `그렇다면 첫 단계는 공개 범위를 좁힌 파일럿입니다. 결과 지표는 만족도 하나로 부족하고, 비용, 운영 부담, 부작용 신고, 재사용 의향을 같이 봐야 합니다.`,
+                    delay: 1450,
+                },
+                {
+                    sender: third.id,
+                    role: `${third.name} (Agent 3)`,
+                    text: `현재 합의점은 "작게 시작하되 실패 기준을 먼저 정한다"입니다. 다음 결정은 파일럿 범위, 관찰 지표, 사람이 개입해야 하는 예외 상황을 정하는 것입니다.`,
+                    delay: 1450,
+                },
+            ];
+        }
+
+        function processQueue() {
+            if (state.debateStarted && !state.busy) {
+                debateStatus.textContent = "토론이 잠시 멈췄습니다. 아래 입력창으로 새 관점을 던질 수 있습니다.";
+            }
+        }
+
+        function normalizeCommand(text) {
+            return text.trim().toLowerCase().replace(/\s+/g, " ");
+        }
+
+        function shouldStartDebateCommand(text) {
+            return [
+                "시작",
+                "바로 시작",
+                "토론 시작",
+                "이제 시작",
+                "이제 토론 시작",
+                "이제 토론을 시작해",
+                "토론 시작해",
+                "토론을 시작해",
+                "토론 시작하자",
+                "토론을 시작하자",
+                "시작해",
+                "시작하자",
+                "start",
+                "go",
+            ].includes(normalizeCommand(text));
+        }
+
+        function clipText(text, maxLength = 180) {
+            const cleanText = text.trim();
+            const characters = Array.from(cleanText);
+            return characters.length > maxLength ? `${characters.slice(0, maxLength).join("")}...` : cleanText;
+        }
+
+        function agendaTranscriptForTopic() {
+            return state.agendaMessages
+                .filter((message) => message.role === "user")
+                .map((message, index) => `${index + 1}. ${message.content}`)
+                .join("\n");
+        }
+
+        function isUnderstandingCheck(text) {
+            const value = String(text || "").trim();
+            if (!value) return false;
+            return [
+                /내\s*(고민|상황|말|얘기|질문|맥락).{0,30}(이해|알|파악|기억)/,
+                /(고민|상황|말|얘기|질문|맥락).{0,20}(말했|설명했|적었).{0,30}(이해|알|파악|기억)/,
+                /이해는?\s*하고\s*있/,
+                /이해했(어|냐|나|는지)/,
+                /내가\s*(뭘|뭐를|무엇을|뭐라고).{0,20}(말했|물었|썼)/,
+                /뭘\s*말했는지.{0,20}(알|기억|이해)/,
+                /듣고\s*있(어|냐|니|는거|는\s*거)/,
+                /말귀를?\s*못\s*알아/,
+            ].some((pattern) => pattern.test(value));
+        }
+
+        function localUnderstandingCheckFallback(topic) {
+            const userMessages = state.agendaMessages
+                .filter((message) => message.role === "user" && !isUnderstandingCheck(message.content));
+            const context = userMessages.map((message) => message.content).join("\n");
+            const narrowed = localNarrowDebateFrame(topic, context);
+            const knownContext = userMessages.length
+                ? userMessages.map((message, index) => `${index + 1}. ${message.content}`).join("\n")
+                : `처음 잡힌 의제는 "${topic}"입니다. 아직 구체적인 상황은 충분히 받지 못했습니다.`;
+
+            return {
+                reply: `맞아요. 방금 답변은 당신이 이미 말한 맥락을 제대로 붙잡지 못하고, 처음부터 다시 묻는 것처럼 들렸습니다.
+
+제가 지금 대화에서 잡고 있는 내용은 이 정도예요.
+${knownContext}
+
+그래서 토론 질문은 일단 "${narrowed}" 쪽으로 좁힐 수 있습니다.
+
+제가 놓친 핵심이 있다면 바로 잡고 싶습니다. 지금 고민의 중심은 선택 자체의 가치인가요, 아니면 당신 상황에서 그 선택을 해도 되는지인가요?`,
+                ready: userMessages.length >= 2,
+                topicDraft: narrowed,
+                summary: agendaTranscriptForTopic(),
+                missing: ["고민의 중심축", "개인 상황에서 가장 중요한 제약"],
+                source: "local",
+            };
+        }
+
+        function buildEnrichedTopic(topic) {
+            const cleanTopic = topic.trim();
+            const summary = state.agendaSummary.trim();
+            const transcript = agendaTranscriptForTopic();
+            if (!summary && !transcript) return cleanTopic;
+
+            return [
+                `의제: ${cleanTopic}`,
+                "",
+                "메인 에이전트가 사전 대화에서 이해한 내용:",
+                summary || transcript,
+                "",
+                transcript ? "사전 대화에서 사용자가 직접 말한 내용:" : "",
+                transcript,
+                transcript ? "" : "",
+                "서브 에이전트들은 위 맥락을 우선 반영해서 서로 다른 관점으로 논의한다.",
+            ].join("\n");
+        }
+
+        function buildAgendaStartSummary(topic) {
+            return `좋습니다. 지금까지 이해한 내용을 바탕으로 "${topic}" 토론을 시작하겠습니다.`;
+            const summary = state.agendaSummary || agendaTranscriptForTopic();
+            if (!summary) {
+                return `"${topic}" 주제로 바로 역할을 나누겠습니다.`;
+            }
+            return `좋습니다. 지금까지 이해한 내용을 바탕으로 "${topic}" 토론을 시작하겠습니다.
+
+${clipText(summary, 260)}`;
+        }
+
+        function buildAgendaContextPayload() {
+            return {
+                summary: state.agendaSummary,
+                topicDraft: state.agendaTopicDraft,
+                transcript: agendaTranscriptForTopic(),
+                messages: state.agendaMessages,
+                agendaState: state.agendaState,
+                rolePlan: state.rolePlanPreview,
+            };
+        }
+
+        function localAgendaFallback(topic, userText) {
+            if (isUnderstandingCheck(userText)) {
+                return localUnderstandingCheckFallback(topic);
+            }
+
+            const asksHowToAnswer = /(어떻게|어떤식|어떤 식|예시|답변|뭘 말|뭘 알려)/.test(userText);
+            if (asksHowToAnswer) {
+                return {
+                    reply: `좋아요. "${topic}" 같은 주제는 단순히 찬반보다 당신의 현재 상황을 알아야 판단이 깊어집니다.
+
+이런 형식으로 답해주면 좋습니다.
+
+- 현재 위치: 지금 어떤 단계에 있는지
+- 원하는 결과: 합격, 커리어 전환, 시간 확보, 불안 해소 중 무엇이 큰지
+- 제약: 시간, 비용, 체력, 가족/일, 대안 경로
+- 두려운 점: 실패했을 때 잃는 것, 하지 않았을 때 후회할 것
+
+예를 들면 이렇게요.
+"나는 지금 로스쿨 졸업을 앞두고 있고, 시험 준비에 1년을 더 쓸 수는 있지만 비용과 멘탈이 걱정된다. 변호사라는 직업 자체보다 법률 커리어의 안정성이 끌린다. 대안으로는 기업 법무나 다른 시험도 생각 중이다."
+
+이 중에서 편한 만큼만 말해 주세요. 제가 그 답을 바탕으로 더 좁혀 묻겠습니다.`,
+                    ready: false,
+                    summary: state.agendaSummary,
+                    missing: ["현재 위치", "목표", "제약", "대안"],
+                    source: "local",
+                };
+            }
+
+            return localConversationalAgendaFallback(topic, userText);
+
+            const userTurns = state.agendaMessages.filter((message) => message.role === "user").length;
+            const summary = agendaTranscriptForTopic();
+            const nextQuestion =
+                userTurns <= 1
+                    ? "이 선택에서 가장 크게 얻고 싶은 것과 가장 피하고 싶은 손실을 각각 하나씩 말해 주세요."
+                    : "좋습니다. 이제 현실 제약을 더 보고 싶습니다. 시간, 돈, 체력, 대안 중 지금 가장 빡빡한 조건은 무엇인가요?";
+            return {
+                reply: `${clipText(userText, 120)}까지는 이해했습니다. 아직 바로 토론을 열기보다는 당신의 판단 기준을 조금 더 잡는 게 좋겠습니다.\n\n${nextQuestion}`,
+                ready: userTurns >= 2,
+                summary,
+                missing: userTurns <= 1 ? ["얻고 싶은 것", "피하고 싶은 손실"] : ["가장 빡빡한 현실 제약"],
+                source: "local",
+            };
+        }
+
+        function localConversationalAgendaFallback(topic, userText) {
+            const userTurns = state.agendaMessages.filter((message) => message.role === "user").length;
+            const context = state.agendaMessages
+                .filter((message) => message.role === "user")
+                .map((message) => message.content)
+                .join("\n");
+            const narrowed = localNarrowDebateFrame(topic, context);
+            const ready = userTurns >= 2;
+
+            if (userTurns <= 1) {
+                return {
+                    reply: `좋아요. "${topic}"는 바로 찬반으로 나누기보다 토론 질문을 조금 좁히는 게 좋아 보여요.\n\n지금은 “${narrowed}” 쪽이 가장 보기 좋은 토론 주제입니다.\n\n이걸 당신 개인의 선택 문제로 볼까요, 아니면 이 시대에 그 선택이 여전히 의미 있는지 보는 문제로 볼까요?`,
+                    ready: false,
+                    topicDraft: narrowed,
+                    summary: agendaTranscriptForTopic(),
+                    missing: ["토론 범위", "개인 상황 반영 정도"],
+                    source: "local",
+                };
+            }
+
+            if (/^(그래|응|좋아|맞아|네|ㅇㅇ|그렇게)/i.test(userText.trim())) {
+                return {
+                    reply: `좋아요. 그럼 지금 토론 주제는 “${narrowed}”로 잡으면 자연스럽겠습니다.\n\n이 방향으로 바로 토론을 시작해도 되고, 원하면 한 번 더 좁힐 수 있어요.`,
+                    ready: true,
+                    topicDraft: narrowed,
+                    summary: agendaTranscriptForTopic(),
+                    missing: [],
+                    source: "local",
+                };
+            }
+
+            return {
+                reply: `좋아요. 방금 말한 내용까지 보면 토론은 “${narrowed}”로 좁히면 훨씬 선명해집니다.\n\n이 주제로 에이전트들을 붙이면 한쪽은 실제 효용을 보고, 한쪽은 대안 경로를 보고, 한쪽은 시간 대비 선택 기준을 볼 수 있어요. 이 방향으로 토론을 열까요, 아니면 더 개인 상황 쪽으로 좁힐까요?`,
+                ready,
+                topicDraft: narrowed,
+                summary: agendaTranscriptForTopic(),
+                missing: ready ? [] : ["토론 범위", "대안 경로"],
+                source: "local",
+            };
+        }
+
+        function localNarrowDebateFrame(topic, context) {
+            const text = `${topic}\n${context}`;
+            if (text.includes("아이디어 검증")) {
+                return "이 사업 아이디어가 실제 고객 문제를 충분히 해결하며 지금 검증할 가치가 있는가?";
+            }
+            if (text.includes("MVP") || text.includes("기능 우선순위")) {
+                return "첫 버전에서 어떤 기능을 반드시 만들고 무엇을 과감히 빼야 하는가?";
+            }
+            if (text.includes("고객") || text.includes("포지셔닝")) {
+                return "초기 고객을 누구로 잡아야 가장 빠르게 문제와 지불 의사를 검증할 수 있는가?";
+            }
+            if (text.includes("가격") || text.includes("수익모델")) {
+                return "초기 제품에서 어떤 가격 구조와 과금 타이밍이 고객 저항과 수익성을 가장 잘 균형 잡는가?";
+            }
+            if (text.includes("마케팅") || text.includes("첫 고객")) {
+                return "초기 고객을 얻기 위해 어떤 채널과 메시지를 먼저 시험해야 하는가?";
+            }
+            if (text.includes("실행") || text.includes("운영")) {
+                return "지금 가진 시간, 돈, 인력 안에서 무엇을 직접 하고 무엇을 미뤄야 하는가?";
+            }
+            if (text.includes("피벗") || text.includes("중단") || text.includes("확장")) {
+                return "현재 신호를 기준으로 계속 밀어붙일지, 방향을 바꿀지, 중단할지 어떻게 판단해야 하는가?";
+            }
+            if (/(빅데이터|데이터|자격증|ADsP|ADP|SQL|시험)/i.test(text)) {
+                if (/(AI|인공지능|시대|필요\s*없|쓸모|대체)/i.test(text)) {
+                    return "AI 시대에도 빅데이터 자격증이 취업이나 커리어 신호로 여전히 의미가 있는가, 아니면 같은 시간을 포트폴리오와 실무 프로젝트에 쓰는 게 나은가?";
+                }
+                return "빅데이터 자격증 준비가 지금 목표에 실제로 도움이 되는가, 아니면 다른 학습/포트폴리오 경로가 더 효율적인가?";
+            }
+            return `${clipText(topic, 80)}를 지금 결정할 때 가장 중요한 기준은 무엇인가?`;
+        }
+
+        async function requestAgendaTurn(topic, userText, signal) {
+            try {
+                return await postJson("/api/debate-lite/agenda", {
+                    topic,
+                    messages: state.agendaMessages,
+                    agendaState: {
+                        ...(state.agendaState || {}),
+                        track: state.selectedDecisionTrack || state.agendaState?.track || "",
+                    },
+                    runtime: runtimePayload(),
+                }, { signal });
+            } catch (error) {
+                if (error?.name === "AbortError") {
+                    throw error;
+                }
+                return localAgendaFallback(topic, userText);
+            }
+        }
+
+        async function startDebate(topic, displayTopic = topic, agendaContext = null) {
+            state.topic = topic;
+            state.displayTopic = displayTopic;
+            state.queue = [];
+            state.debateStarted = true;
+            state.busy = true;
+            state.phase = "debating";
+            state.turn = 0;
+            state.sessionId = "";
+            syncLayoutMode();
+
+            topicDisplay.textContent = displayTopic;
+            debateChatBox.innerHTML = "";
+
+            setMainComposerEnabled(false);
+            setDebateComposerEnabled(false);
+            debateStatus.textContent = "메인 에이전트가 토론 주제를 정리하는 중입니다.";
+
+            state.streamController = new AbortController();
+
+            try {
+                const response = await fetch("/api/debate-lite/stream", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        topic,
+                        runtime: runtimePayload(),
+                        agenda: agendaContext,
+                        rolePlan: state.rolePlanPreview,
+                    }),
+                    signal: state.streamController.signal,
+                });
+
+                await readNdjsonStream(response, handleLiteEvent);
+            } catch (error) {
+                if (error.name === "AbortError") return;
+                clearActiveTyping();
+                state.busy = false;
+                state.debateStarted = false;
+                state.phase = "idle";
+                state.streamController = null;
+                syncLayoutMode();
+                setMainSubmitLabel("보내기");
+                mainInput.placeholder = "직접 입력하거나 위에서 사업 결정 방향을 고르세요.";
+                setMainComposerEnabled(true);
+                setDebateComposerEnabled(Boolean(state.sessionId));
+                debateStatus.textContent = "토론을 시작하지 못했습니다.";
+                renderMessage(
+                    mainChatBox,
+                    error instanceof Error ? error.message : "토론을 시작하지 못했습니다.",
+                    "main",
+                    "Main Agent",
+                    false,
+                );
+            }
+        }
+
+        async function handleTopicSubmit(event) {
+            event.preventDefault();
+            if (state.agendaBusy && state.agendaAbortController) {
+                stopMainAgendaTurn();
+                return;
+            }
+            const text = mainInput.value.trim();
+            if (!text || state.busy || !state.runtime.ready) return;
+
+            mainInput.value = "";
+            renderMessage(mainChatBox, text, "user", "사용자", true);
+
+            setDecisionBoardVisible(false);
+
+            if (shouldStartDebateCommand(text) && state.pendingTopic) {
+                await handleAgendaStart();
+                return;
+            }
+
+            if (!state.pendingTopic) {
+                state.pendingTopic = text;
+                state.displayTopic = text;
+            }
+            state.phase = "agenda";
+            state.agendaMessages.push({ role: "user", content: text });
+            state.agendaBusy = true;
+            state.agendaAbortController = new AbortController();
+            setMainComposerEnabled(false);
+            setMainStopMode(true);
+            state.activeTyping = renderTyping(mainChatBox, "main");
+
+            try {
+                const result = await requestAgendaTurn(state.pendingTopic, text, state.agendaAbortController.signal);
+                clearActiveTyping();
+                const reply = result.reply || localAgendaFallback(state.pendingTopic, text).reply;
+                state.agendaMessages.push({ role: "main", content: reply });
+                state.agendaState = result.agendaState || state.agendaState;
+                state.agendaTopicDraft = result.topicDraft || state.agendaTopicDraft || state.pendingTopic;
+                state.agendaSummary = result.summary || state.agendaSummary || agendaTranscriptForTopic();
+                state.agendaReady = Boolean(result.ready);
+                renderMessage(mainChatBox, reply, "main", "Main Agent", false);
+                const plannedRoles = normalizeRolePlan(result.rolePlan)
+                    || (state.agendaReady ? localRolePlanForAgenda(state.agendaTopicDraft || state.pendingTopic) : null);
+                if (plannedRoles && rolePlanKey(plannedRoles) !== state.rolePlanPreviewKey) {
+                    setAgendaRolePlan(plannedRoles);
+                }
+                setMainSubmitLabel("보내기");
+                mainInput.placeholder = state.agendaReady
+                    ? "역할 배정이 끝났습니다. 더 조정하거나 '토론 시작'을 누르세요."
+                    : "메인 에이전트에게 상황을 더 설명하거나 질문하세요.";
+            } catch (error) {
+                if (error?.name !== "AbortError") {
+                    renderMessage(
+                        mainChatBox,
+                        error instanceof Error ? error.message : "메인 응답을 가져오지 못했습니다.",
+                        "main",
+                        "Main Agent",
+                        false,
+                    );
+                }
+            } finally {
+                clearActiveTyping();
+                state.agendaAbortController = null;
+                state.agendaBusy = false;
+                setMainStopMode(false);
+                setMainComposerEnabled(state.runtime.ready && !state.busy && !state.debateStarted);
+                updateAgendaStartButton();
+                mainInput.focus();
+            }
+        }
+
+        async function handleAgendaStart() {
+            if (!state.pendingTopic || state.busy || state.agendaBusy || state.debateStarted) return;
+
+            state.phase = "starting";
+            setMainComposerEnabled(false);
+            updateAgendaStartButton();
+            const debateTopic = state.agendaTopicDraft || state.pendingTopic;
+            if (!state.rolePlanPreview) {
+                setAgendaRolePlan(localRolePlanForAgenda(debateTopic), { announce: false });
+            }
+            renderMessage(mainChatBox, buildAgendaStartSummary(debateTopic), "main", "Main Agent", false);
+            state.activeTyping = renderTyping(mainChatBox, "main");
+            mainInput.placeholder = "새 주제를 시작하려면 왼쪽 위 초기화를 누르세요.";
+            await startDebate(debateTopic, debateTopic, buildAgendaContextPayload());
+        }
+
+        function buildHumanResponse(text) {
+            return postJson("/api/debate-lite/intervention", {
+                sessionId: state.sessionId,
+                content: text,
+                runtime: runtimePayload(),
+            });
+        }
+
+        async function handleHumanIntervention(event) {
+            event.preventDefault();
+            const text = debateInput.value.trim();
+            if (!text || !state.debateStarted || !state.sessionId) return;
+
+            debateInput.value = "";
+            if (state.streamController) {
+                state.streamController.abort();
+                state.streamController = null;
+            }
+            clearActiveTyping();
+            renderMessage(debateChatBox, text, "user", "사용자 개입", true);
+            debateStatus.textContent = "사용자 개입을 반영하는 중입니다.";
+            setDebateComposerEnabled(false);
+
+            try {
+                const result = await buildHumanResponse(text);
+                state.busy = false;
+                if (result.session?.id) {
+                    state.sessionId = result.session.id;
+                }
+                await renderResponseMessages(result.messages || []);
+                debateStatus.textContent = "토론이 잠시 멈췄습니다. 아래 입력창으로 새 관점을 던질 수 있습니다.";
+            } catch (error) {
+                renderMessage(
+                    debateChatBox,
+                    error instanceof Error ? error.message : "개입을 반영하지 못했습니다.",
+                    "main",
+                    "Main Agent",
+                    false,
+                );
+                debateStatus.textContent = "개입을 반영하지 못했습니다.";
+            } finally {
+                setDebateComposerEnabled(true);
+            }
+        }
+
+        function resetDebate() {
+            if (state.agendaAbortController) {
+                state.agendaAbortController.abort();
+            }
+            if (state.streamController) {
+                state.streamController.abort();
+            }
+            clearActiveTyping();
+            const currentRuntime = state.runtime;
+            const currentRuntimeOptions = state.runtimeOptions;
+            state = {
+                topic: "",
+                displayTopic: "",
+                pendingTopic: "",
+                clarificationAnswer: "",
+                selectedDecisionTrack: "",
+                agendaMessages: [],
+                agendaState: null,
+                agendaSummary: "",
+                agendaTopicDraft: "",
+                agendaReady: false,
+                rolePlanPreview: null,
+                rolePlanPreviewKey: "",
+                agendaBusy: false,
+                phase: "idle",
+                roles: roleSets[3].roles,
+                sessionId: "",
+                queue: [],
+                activeTimer: null,
+                activeTyping: null,
+                agendaAbortController: null,
+                streamController: null,
+                busy: false,
+                runtime: currentRuntime,
+                runtimeOptions: currentRuntimeOptions,
+                debateStarted: false,
+                turn: 0,
+            };
+            syncLayoutMode();
+
+            mainChatBox.innerHTML = "";
+            debateChatBox.innerHTML = "";
+            renderMessage(
+                mainChatBox,
+                "먼저 사업에서 어떤 결정을 내려야 하는지 방향을 골라주세요. 그다음 저와 짧게 대화하면서 토론할 질문을 좁히고, 준비되면 서브 에이전트들이 논의합니다.",
+                "main",
+                "Main Agent",
+                false,
+            );
+
+            setDecisionBoardVisible(true);
+            topicDisplay.textContent = "주제 대기 중";
+            debateStatus.textContent = "아직 토론이 시작되지 않았습니다.";
+            renderRoleStrip(roleSets[3].roles.map((role) => ({ ...role, name: "역할 대기" })));
+            debateOverlay.classList.remove("hidden");
+            orchestrationView.classList.add("hidden");
+            spawnCards.forEach((card) => {
+                card.classList.remove("visible");
+                card.innerHTML = "";
+            });
+
+            setMainSubmitLabel("보내기");
+            mainInput.placeholder = "직접 입력하거나 위에서 사업 결정 방향을 고르세요.";
+            setMainComposerEnabled(state.runtime.ready);
+            debateInput.disabled = true;
+            debateSendBtn.disabled = true;
+            mainInput.focus();
+            renderRuntime();
+        }
+
+        topicForm.addEventListener("submit", handleTopicSubmit);
+        agendaStartBtn.addEventListener("click", handleAgendaStart);
+        debateForm.addEventListener("submit", handleHumanIntervention);
+        resetButton.addEventListener("click", resetDebate);
+        providerButtons.forEach((button) => {
+            button.addEventListener("click", () => selectRuntime(button.dataset.provider));
+        });
+        openaiApiKey.addEventListener("input", () => {
+            state.runtime.ready = providerReadyByDefault(state.runtime.provider);
+            state.runtime.setupComplete = false;
+            saveRuntimePreference();
+            renderRuntime();
+        });
+        openaiModel.addEventListener("input", () => {
+            state.runtime.model = openaiModel.value.trim() || state.runtime.model;
+            state.runtime.ready = providerReadyByDefault(state.runtime.provider);
+            state.runtime.setupComplete = false;
+            saveRuntimePreference();
+            renderRuntime();
+        });
+        runtimeBaseUrl.addEventListener("input", () => {
+            state.runtime.baseUrl = runtimeBaseUrl.value.trim() || state.runtime.baseUrl;
+            state.runtime.ready = providerReadyByDefault(state.runtime.provider);
+            state.runtime.setupComplete = false;
+            saveRuntimePreference();
+            renderRuntime();
+        });
+
+        syncLayoutMode();
+        renderDecisionTracks();
+        setMainComposerEnabled(false);
+        const hasRuntimeSetup = loadRuntimePreference();
+        if (!hasRuntimeSetup) {
+            window.location.replace("/");
+        }
+        renderRoleStrip(roleSets[3].roles.map((role) => ({ ...role, name: "역할 대기" })));
+        if (hasRuntimeSetup) {
+            loadRuntimeOptions();
+        }
+        initIcons();
+    </script>
+</body>
+</html>

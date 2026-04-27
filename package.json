@@ -1,0 +1,41 @@
+{
+  "name": "agent-toron",
+  "version": "0.3.0",
+  "private": true,
+  "scripts": {
+    "mvp": "node server.mjs",
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "docker:build": "docker build -t agent-toron:local .",
+    "docker:run": "docker run --rm -p 4187:4187 agent-toron:local",
+    "next:dev": "next dev",
+    "next:build": "next build",
+    "next:start": "next start",
+    "build": "node --check server.mjs && node --check mvp/app.js",
+    "lint": "eslint . --max-warnings=0"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "1.2.4",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.11.0",
+    "next": "16.2.4",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "tailwind-merge": "3.5.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.5",
+    "@types/node": "latest",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "latest",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.4",
+    "typescript": "6.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.10"
+    }
+  }
+}

@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 연결 설정 - Agent Debate</title>
+    <link rel="icon" href="data:,">
+    <script
+        src="https://unpkg.com/lucide@1.11.0/dist/umd/lucide.min.js"
+        integrity="sha384-7PArHXNzg1s/WgbAH9xkBpx4T6MJ0jPAxaEM9yld+zvdFEjSf+wzzv0hDnem/6rw"
+        crossorigin="anonymous"
+    ></script>
+    <style>
+        :root {
+            --bg: #f7f7f2;
+            --panel: #ffffff;
+            --panel-soft: #fbfbf7;
+            --line: #deded6;
+            --line-strong: #bebeb4;
+            --text: #202123;
+            --muted: #686d73;
+            --quiet: #8a8f87;
+            --accent: #10a37f;
+            --accent-soft: #e5f4ee;
+            --danger: #b42318;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 247, 242, 0.98) 38%, #efeee8);
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            width: min(1040px, calc(100% - 40px));
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 28px 0 42px;
+        }
+
+        .intro {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            min-height: auto;
+            padding: 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mark {
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid rgba(16, 163, 127, 0.24);
+            border-radius: var(--radius);
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            max-width: 100%;
+            margin-top: 28px;
+            font-size: clamp(2.35rem, 4.7vw, 3.65rem);
+            line-height: 1.05;
+            letter-spacing: 0;
+            font-weight: 700;
+            white-space: nowrap;
+            word-break: keep-all;
+        }
+
+        .lead {
+            max-width: 450px;
+            margin-top: 22px;
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.68;
+        }
+
+        .small-copy {
+            color: var(--quiet);
+            font-size: 0.82rem;
+            line-height: 1.55;
+        }
+
+        .intro > .small-copy {
+            max-width: 650px;
+            margin-top: 18px;
+        }
+
+        .setup {
+            align-self: stretch;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.88);
+            box-shadow: 0 24px 70px rgba(32, 33, 35, 0.08);
+            overflow: hidden;
+        }
+
+        .setup-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 22px 24px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .eyebrow {
+            margin-bottom: 6px;
+            color: var(--quiet);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .setup-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #fff;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-pill.ready {
+            border-color: rgba(16, 163, 127, 0.26);
+            background: var(--accent-soft);
+            color: #08745f;
+        }
+
+        .status-pill.error {
+            border-color: rgba(180, 35, 24, 0.24);
+            background: #fff3f1;
+            color: var(--danger);
+        }
+
+        .setup-body {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            min-height: 500px;
+        }
+
+        .provider-list {
+            display: grid;
+            align-content: start;
+            gap: 6px;
+            padding: 12px;
+            border-right: 1px solid var(--line);
+            background: var(--panel-soft);
+        }
+
+        .provider-option {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            min-height: 58px;
+            padding: 9px 10px;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            text-align: left;
+            transition: background 160ms ease, border-color 160ms ease;
+        }
+
+        .provider-option:hover {
+            background: #fff;
+            border-color: var(--line);
+        }
+
+        .provider-option.active {
+            background: #fff;
+            border-color: rgba(16, 163, 127, 0.36);
+            box-shadow: inset 0 0 0 1px rgba(16, 163, 127, 0.1);
+        }
+
+        .provider-icon {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius);
+            background: #fff;
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .provider-name {
+            display: block;
+            overflow: hidden;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .provider-copy {
+            display: block;
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.75rem;
+            line-height: 1.35;
+        }
+
+        .provider-state {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #c4c2b8;
+        }
+
+        .provider-state.ready {
+            background: var(--accent);
+        }
+
+        .details {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        .details-main {
+            display: grid;
+            gap: 18px;
+        }
+
+        .provider-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .provider-heading h2 {
+            font-size: 1.42rem;
+            line-height: 1.2;
+        }
+
+        .field-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .field {
+            display: grid;
+            gap: 7px;
+        }
+
+        .model-choice-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .model-choice {
+            display: grid;
+            gap: 4px;
+            min-height: 78px;
+            padding: 11px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            color: var(--text);
+            cursor: pointer;
+            text-align: left;
+            transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+        }
+
+        .model-choice:hover {
+            border-color: var(--line-strong);
+            background: #fbfbf7;
+        }
+
+        .model-choice.active {
+            border-color: rgba(16, 163, 127, 0.52);
+            background: var(--accent-soft);
+            box-shadow: inset 0 0 0 1px rgba(16, 163, 127, 0.12);
+        }
+
+        .model-choice strong {
+            font-size: 0.86rem;
+        }
+
+        .model-choice span {
+            color: var(--muted);
+            font-size: 0.75rem;
+            line-height: 1.35;
+        }
+
+        label {
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        input,
+        select {
+            width: 100%;
+            min-height: 42px;
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            outline: none;
+            background: #fff;
+            color: var(--text);
+            padding: 0 12px;
+        }
+
+        select {
+            appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+            background-position:
+                calc(100% - 18px) 18px,
+                calc(100% - 12px) 18px;
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            padding-right: 34px;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.13);
+        }
+
+        .field.hidden {
+            display: none;
+        }
+
+        .notice {
+            min-height: 52px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+            padding: 12px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.55;
+        }
+
+        .notice.error {
+            border-color: rgba(180, 35, 24, 0.22);
+            background: #fff8f7;
+            color: #8a1f14;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+            padding-top: 28px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 42px;
+            padding: 0 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+        }
+
+        .button:hover:not(:disabled) {
+            background: #f4f4ef;
+            border-color: var(--line-strong);
+        }
+
+        .button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .button-primary {
+            background: var(--text);
+            color: #fff;
+            border-color: var(--text);
+            font-weight: 700;
+        }
+
+        .button-primary:hover:not(:disabled) {
+            background: #343541;
+            border-color: #343541;
+        }
+
+        .button-danger {
+            color: #8a1f14;
+            border-color: rgba(180, 35, 24, 0.24);
+            background: #fff8f7;
+        }
+
+        .button-danger:hover:not(:disabled) {
+            border-color: rgba(180, 35, 24, 0.38);
+            background: #fff3f1;
+        }
+
+        @media (max-width: 940px) {
+            .shell {
+                grid-template-columns: 1fr;
+                padding: 28px 0;
+            }
+
+            .intro {
+                min-height: auto;
+            }
+
+            h1 {
+                margin-top: 36px;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .shell {
+                width: min(100% - 20px, 1180px);
+            }
+
+            h1 {
+                font-size: clamp(2.1rem, 10vw, 3rem);
+                white-space: normal;
+            }
+
+            .setup-body {
+                grid-template-columns: 1fr;
+            }
+
+            .provider-list {
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .model-choice-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="intro" aria-label="제품 소개">
+            <div>
+                <div class="brand">
+                    <div class="mark"><i data-lucide="messages-square" size="18"></i></div>
+                    <div>
+                        <strong>Agent Debate</strong>
+                        <p class="small-copy">연결 먼저, 토론은 그 다음 화면에서</p>
+                    </div>
+                </div>
+                <h1>AI를 고르고 바로 토론방으로.</h1>
+            </div>
+            <p class="small-copy">API 키는 로컬 브라우저 세션에만 보관됩니다. 서버 환경변수를 쓰는 경우에는 키 입력 없이 연결 테스트를 진행할 수 있습니다.</p>
+        </section>
+
+        <section class="setup" aria-label="AI 연결 설정">
+            <header class="setup-head">
+                <div>
+                    <p class="eyebrow">Connection</p>
+                    <h2 class="setup-title">실행할 AI 선택</h2>
+                </div>
+                <span class="status-pill" id="statusPill">확인 필요</span>
+            </header>
+
+            <div class="setup-body">
+                <nav class="provider-list" id="providerList" aria-label="AI 공급자"></nav>
+
+                <section class="details">
+                    <div class="details-main">
+                        <div class="provider-heading">
+                            <div>
+                                <p class="eyebrow" id="providerKind">API</p>
+                                <h2 id="providerTitle">OpenAI API</h2>
+                            </div>
+                            <div class="mark" id="providerIcon"><i data-lucide="sparkles" size="18"></i></div>
+                        </div>
+
+                        <div class="field-grid">
+                            <div class="field" id="apiKeyField">
+                                <label for="apiKeyInput">API Key</label>
+                                <input id="apiKeyInput" type="password" autocomplete="off" placeholder="API 키를 입력하세요">
+                            </div>
+                            <div class="field" id="modelField">
+                                <label for="modelInput">Model</label>
+                                <div class="model-choice-grid" id="modelChoiceGrid" role="radiogroup" aria-label="Model"></div>
+                                <input id="modelInput" type="hidden">
+                            </div>
+                            <div class="field hidden" id="baseUrlField">
+                                <label for="baseUrlInput">Base URL</label>
+                                <input id="baseUrlInput" type="text" autocomplete="off" placeholder="http://127.0.0.1:11434">
+                            </div>
+                        </div>
+
+                        <p class="notice" id="noticeText">연결 테스트를 통과하면 토론 화면을 열 수 있습니다.</p>
+                    </div>
+
+                    <div class="actions">
+                        <button class="button" id="testButton" type="button">
+                            <span>연결 테스트</span>
+                            <i data-lucide="plug-zap" size="16"></i>
+                        </button>
+                        <button class="button button-danger" id="disconnectButton" type="button" disabled>
+                            <span>연결 끊기</span>
+                            <i data-lucide="unlink" size="16"></i>
+                        </button>
+                        <button class="button button-primary" id="openButton" type="button" disabled>
+                            <span>토론방 열기</span>
+                            <i data-lucide="arrow-right" size="16"></i>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const providerList = document.getElementById("providerList");
+        const providerTitle = document.getElementById("providerTitle");
+        const providerKind = document.getElementById("providerKind");
+        const providerIcon = document.getElementById("providerIcon");
+        const statusPill = document.getElementById("statusPill");
+        const apiKeyField = document.getElementById("apiKeyField");
+        const apiKeyInput = document.getElementById("apiKeyInput");
+        const modelField = document.getElementById("modelField");
+        const modelChoiceGrid = document.getElementById("modelChoiceGrid");
+        const modelInput = document.getElementById("modelInput");
+        const baseUrlField = document.getElementById("baseUrlField");
+        const baseUrlInput = document.getElementById("baseUrlInput");
+        const noticeText = document.getElementById("noticeText");
+        const testButton = document.getElementById("testButton");
+        const disconnectButton = document.getElementById("disconnectButton");
+        const openButton = document.getElementById("openButton");
+
+        const PREFERENCE_KEY = "debate-runtime-preference";
+
+        const providerMeta = [
+            { id: "openai", title: "OpenAI API", kind: "Responses API", copy: "GPT 모델 직접 실행", icon: "sparkles", needsKey: true },
+            { id: "anthropic", title: "Anthropic Claude", kind: "Messages API", copy: "Claude API 직접 실행", icon: "brain", needsKey: true },
+            { id: "gemini", title: "Google Gemini", kind: "Gemini API", copy: "Google AI Studio 키 사용", icon: "gem", needsKey: true },
+            { id: "openrouter", title: "OpenRouter", kind: "Chat Completions", copy: "여러 모델 라우팅", icon: "route", needsKey: true },
+            { id: "codex", title: "Codex OAuth", kind: "Local OAuth", copy: "codex login 세션 사용", icon: "terminal", needsKey: false },
+            { id: "openclaw", title: "OpenClaw", kind: "Local Profile", copy: "로컬 프로필 사용", icon: "workflow", needsKey: false },
+            { id: "ollama", title: "Ollama", kind: "Local HTTP", copy: "로컬 모델 서버", icon: "hard-drive", needsKey: false, needsBaseUrl: true },
+            { id: "mock", title: "Demo", kind: "No API", copy: "흐름만 확인", icon: "play", needsKey: false },
+        ];
+
+        const providerModelOptions = {
+            openai: [
+                { value: "gpt-5.5", label: "강력", copy: "복잡한 사안" },
+                { value: "gpt-5.4", label: "균형", copy: "품질과 속도" },
+                { value: "gpt-5.4-mini", label: "빠름", copy: "가벼운 토론" },
+            ],
+            anthropic: [
+                { value: "claude-sonnet-4-6", label: "균형", copy: "대부분의 토론" },
+                { value: "claude-opus-4-6", label: "강력", copy: "깊은 검토" },
+                { value: "claude-haiku-4-5", label: "빠름", copy: "짧은 응답" },
+            ],
+            gemini: [
+                { value: "gemini-2.5-flash", label: "균형", copy: "빠른 기본값" },
+                { value: "gemini-2.5-pro", label: "강력", copy: "복잡한 추론" },
+                { value: "gemini-2.5-flash-lite", label: "빠름", copy: "낮은 비용" },
+            ],
+            openrouter: [
+                { value: "openrouter/auto", label: "자동", copy: "라우터 추천" },
+                { value: "openai/gpt-5.5", label: "OpenAI", copy: "강한 품질" },
+                { value: "anthropic/claude-sonnet-4.5", label: "Claude", copy: "균형형" },
+                { value: "google/gemini-2.5-flash", label: "Gemini", copy: "빠른 응답" },
+            ],
+            codex: [
+                { value: "gpt-5.4-mini", label: "빠름", copy: "토론 MVP 기본" },
+                { value: "gpt-5.4", label: "균형", copy: "품질과 속도" },
+                { value: "gpt-5.5", label: "강력", copy: "깊은 검토" },
+            ],
+            ollama: [
+                { value: "gemma3", label: "Gemma", copy: "기본 로컬" },
+                { value: "llama3.2", label: "Llama", copy: "범용 로컬" },
+                { value: "qwen2.5", label: "Qwen", copy: "코딩/추론" },
+                { value: "mistral", label: "Mistral", copy: "가벼운 로컬" },
+            ],
+        };
+
+        let state = {
+            provider: "openai",
+            ready: false,
+            options: null,
+        };
+
+        function apiKeyStorageKey(provider) {
+            return `debate-runtime-api-key-${provider}`;
+        }
+
+        function metaFor(provider) {
+            return providerMeta.find((item) => item.id === provider) || providerMeta[0];
+        }
+
+        function optionFor(provider) {
+            return state.options?.providers?.[provider] || {};
+        }
+
+        function defaultModel(provider) {
+            return state.options?.defaultModels?.[provider] || optionFor(provider).model || "";
+        }
+
+        function modelOptionsFor(provider) {
+            const defaults = providerModelOptions[provider] || [];
+            const configured = defaultModel(provider);
+            const options = configured
+                ? [...defaults, { value: configured, label: "기본", copy: "서버 설정" }]
+                : defaults;
+            const seen = new Set();
+            return options.filter((item) => {
+                if (!item.value || seen.has(item.value)) return false;
+                seen.add(item.value);
+                return true;
+            });
+        }
+
+        function renderModelOptions(provider, selectedModel = "") {
+            const options = modelOptionsFor(provider);
+            const selected = selectedModel || defaultModel(provider) || options[0]?.value || "";
+            modelChoiceGrid.innerHTML = "";
+            const hasSelected = options.some((item) => item.value === selected);
+            const finalOptions = hasSelected || !selected ? options : [{ value: selected, label: "기본", copy: "서버 설정" }, ...options];
+            for (const item of finalOptions) {
+                const button = document.createElement("button");
+                button.className = `model-choice${item.value === selected ? " active" : ""}`;
+                button.type = "button";
+                button.setAttribute("role", "radio");
+                button.setAttribute("aria-checked", item.value === selected ? "true" : "false");
+                button.dataset.model = item.value;
+                button.innerHTML = `<strong>${item.label}</strong><span>${item.copy || item.value}</span>`;
+                button.addEventListener("click", () => selectModel(item.value));
+                modelChoiceGrid.appendChild(button);
+            }
+            modelInput.value = selected;
+        }
+
+        function selectModel(model) {
+            modelInput.value = model;
+            state.ready = false;
+            savePreference(false);
+            renderDetails();
+        }
+
+        function providerHasEnvKey(provider) {
+            return optionFor(provider).auth === "env";
+        }
+
+        function runtimePayload() {
+            return {
+                provider: state.provider,
+                model: modelInput.value.trim(),
+                baseUrl: baseUrlInput.value.trim(),
+                apiKey: apiKeyInput.value.trim(),
+            };
+        }
+
+        function savePreference(ready = state.ready) {
+            const preference = {
+                provider: state.provider,
+                model: modelInput.value.trim(),
+                baseUrl: baseUrlInput.value.trim(),
+                ready: Boolean(ready),
+                testedAt: ready ? new Date().toISOString() : "",
+            };
+            window.localStorage.setItem(PREFERENCE_KEY, JSON.stringify(preference));
+
+            const key = apiKeyInput.value.trim();
+            const storageKey = apiKeyStorageKey(state.provider);
+            if (key) {
+                window.sessionStorage.setItem(storageKey, key);
+                if (state.provider === "openai") window.sessionStorage.setItem("debate-openai-api-key", key);
+            } else {
+                window.sessionStorage.removeItem(storageKey);
+                if (state.provider === "openai") window.sessionStorage.removeItem("debate-openai-api-key");
+            }
+        }
+
+        function hasStoredConnection() {
+            let saved = {};
+            try {
+                saved = JSON.parse(window.localStorage.getItem(PREFERENCE_KEY) || "{}");
+            } catch {
+                saved = {};
+            }
+            return Boolean(
+                saved.provider ||
+                window.sessionStorage.getItem(apiKeyStorageKey(state.provider)) ||
+                window.sessionStorage.getItem("debate-openai-api-key"),
+            );
+        }
+
+        function disconnectProvider() {
+            window.localStorage.removeItem(PREFERENCE_KEY);
+            window.sessionStorage.removeItem(apiKeyStorageKey(state.provider));
+            if (state.provider === "openai") {
+                window.sessionStorage.removeItem("debate-openai-api-key");
+            }
+            apiKeyInput.value = "";
+            state.ready = false;
+            renderDetails("연결을 끊었습니다. 다시 연결하려면 테스트를 먼저 진행하세요.");
+        }
+
+        function loadSavedPreference() {
+            let saved = {};
+            try {
+                saved = JSON.parse(window.localStorage.getItem(PREFERENCE_KEY) || "{}");
+            } catch {
+                saved = {};
+            }
+            state.provider = providerMeta.some((item) => item.id === saved.provider) ? saved.provider : state.provider;
+            state.ready = Boolean(saved.ready);
+            renderModelOptions(state.provider, saved.model || defaultModel(state.provider));
+            baseUrlInput.value = saved.baseUrl || state.options?.defaultBaseUrls?.ollama || "http://127.0.0.1:11434";
+            apiKeyInput.value =
+                window.sessionStorage.getItem(apiKeyStorageKey(state.provider)) ||
+                (state.provider === "openai" ? window.sessionStorage.getItem("debate-openai-api-key") || "" : "");
+        }
+
+        function renderProviders() {
+            providerList.innerHTML = "";
+            for (const item of providerMeta) {
+                const button = document.createElement("button");
+                button.className = `provider-option${item.id === state.provider ? " active" : ""}`;
+                button.type = "button";
+                button.dataset.provider = item.id;
+                button.innerHTML = `
+                    <span class="provider-icon"><i data-lucide="${item.icon}" size="15"></i></span>
+                    <span>
+                        <span class="provider-name">${item.title}</span>
+                        <span class="provider-copy">${item.copy}</span>
+                    </span>
+                    <span class="provider-state${optionFor(item.id).ready ? " ready" : ""}"></span>
+                `;
+                button.addEventListener("click", () => selectProvider(item.id));
+                providerList.appendChild(button);
+            }
+            initIcons();
+        }
+
+        function renderDetails(message = "") {
+            const meta = metaFor(state.provider);
+            const option = optionFor(state.provider);
+            providerTitle.textContent = meta.title;
+            providerKind.textContent = meta.kind;
+            providerIcon.innerHTML = `<i data-lucide="${meta.icon}" size="18"></i>`;
+            renderModelOptions(state.provider, modelInput.value || defaultModel(state.provider));
+
+            apiKeyField.classList.toggle("hidden", !meta.needsKey);
+            baseUrlField.classList.toggle("hidden", !meta.needsBaseUrl);
+            modelField.classList.toggle("hidden", state.provider === "openclaw" || state.provider === "mock");
+            apiKeyInput.placeholder = providerHasEnvKey(state.provider) ? "서버 환경변수를 사용 중입니다" : `${meta.title} API key`;
+
+            statusPill.textContent = state.ready ? "연결 준비됨" : "확인 필요";
+            statusPill.className = `status-pill${state.ready ? " ready" : ""}`;
+            openButton.disabled = !state.ready;
+            disconnectButton.disabled = !hasStoredConnection();
+
+            noticeText.className = "notice";
+            noticeText.textContent = message || option.detail || "연결 테스트를 통과하면 토론 화면을 열 수 있습니다.";
+            renderProviders();
+            initIcons();
+        }
+
+        function selectProvider(provider) {
+            state.provider = provider;
+            state.ready = Boolean(optionFor(provider).ready || provider === "mock");
+            renderModelOptions(provider, defaultModel(provider));
+            baseUrlInput.value = optionFor(provider).baseUrl || state.options?.defaultBaseUrls?.ollama || "http://127.0.0.1:11434";
+            apiKeyInput.value =
+                window.sessionStorage.getItem(apiKeyStorageKey(provider)) ||
+                (provider === "openai" ? window.sessionStorage.getItem("debate-openai-api-key") || "" : "");
+            savePreference(state.ready);
+            renderDetails();
+        }
+
+        async function postJson(url, payload) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const text = await response.text();
+            let parsed = {};
+            try {
+                parsed = JSON.parse(text);
+            } catch {}
+            if (!response.ok) {
+                throw new Error(parsed.detail || parsed.error || text || "연결 테스트에 실패했습니다.");
+            }
+            return parsed;
+        }
+
+        async function testConnection() {
+            state.ready = false;
+            testButton.disabled = true;
+            openButton.disabled = true;
+            statusPill.textContent = "테스트 중";
+            statusPill.className = "status-pill";
+            noticeText.className = "notice";
+            noticeText.textContent = "선택한 AI 연결을 확인하고 있습니다.";
+
+            try {
+                const result = await postJson("/api/debate-lite/runtime/test", { runtime: runtimePayload() });
+                state.ready = Boolean(result.ok);
+                savePreference(state.ready);
+                renderDetails(result.detail || "연결 테스트를 통과했습니다.");
+            } catch (error) {
+                state.ready = false;
+                savePreference(false);
+                statusPill.textContent = "실패";
+                statusPill.className = "status-pill error";
+                noticeText.className = "notice error";
+                noticeText.textContent = error instanceof Error ? error.message : "연결 테스트에 실패했습니다.";
+                openButton.disabled = true;
+            } finally {
+                testButton.disabled = false;
+            }
+        }
+
+        function openDebateRoom() {
+            savePreference(true);
+            window.location.href = "/debate_mvp.html";
+        }
+
+        async function loadOptions() {
+            try {
+                const response = await fetch("/api/debate-lite/runtime/options");
+                state.options = await response.json();
+                state.provider = state.options.defaultProvider || state.provider;
+            } catch {
+                state.options = { providers: {}, defaultModels: {} };
+                state.provider = "mock";
+            }
+            loadSavedPreference();
+            if (optionFor(state.provider).ready || state.provider === "mock") state.ready = true;
+            renderDetails();
+        }
+
+        function initIcons() {
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        testButton.addEventListener("click", testConnection);
+        disconnectButton.addEventListener("click", disconnectProvider);
+        openButton.addEventListener("click", openDebateRoom);
+        apiKeyInput.addEventListener("input", () => {
+            state.ready = Boolean(optionFor(state.provider).ready && providerHasEnvKey(state.provider));
+            savePreference(state.ready);
+            renderDetails();
+        });
+        baseUrlInput.addEventListener("input", () => {
+            state.ready = false;
+            savePreference(false);
+            renderDetails();
+        });
+
+        loadOptions();
+        initIcons();
+    </script>
+</body>
+</html>

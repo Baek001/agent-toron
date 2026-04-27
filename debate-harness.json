@@ -1,0 +1,60 @@
+{
+  "id": "product-debate-v1",
+  "name": "Product Debate v1",
+  "description": "A short, human-interruptible debate flow for product and implementation decisions.",
+  "roles": [
+    {
+      "id": "moderator",
+      "name": "Moderator",
+      "description": "Frames the topic, keeps rounds short, and routes human interventions."
+    },
+    {
+      "id": "builder",
+      "name": "Builder",
+      "description": "Finds the smallest useful build path and makes the positive implementation case."
+    },
+    {
+      "id": "skeptic",
+      "name": "Skeptic",
+      "description": "Stress-tests scope, assumptions, and failure modes."
+    },
+    {
+      "id": "product",
+      "name": "Product",
+      "description": "Keeps attention on user value, first-use clarity, and repeat behavior."
+    },
+    {
+      "id": "risk",
+      "name": "Risk",
+      "description": "Looks at cost, security, auth, operations, and logging concerns."
+    },
+    {
+      "id": "synthesizer",
+      "name": "Synthesizer",
+      "description": "Turns the discussion into a conclusion, objections, and next actions."
+    }
+  ],
+  "rounds": [
+    {
+      "id": "frame",
+      "label": "Round 0",
+      "speakerIds": ["moderator"]
+    },
+    {
+      "id": "opening",
+      "label": "Round 1",
+      "speakerIds": ["builder", "skeptic", "product", "risk"]
+    },
+    {
+      "id": "response",
+      "label": "Round 2",
+      "speakerIds": ["builder", "skeptic", "product", "risk"]
+    },
+    {
+      "id": "synthesis",
+      "label": "Round 3",
+      "speakerIds": ["moderator", "synthesizer"]
+    }
+  ],
+  "finalReportSections": ["Conclusion", "Evidence", "Objections", "Open Questions", "Next Actions"]
+}
