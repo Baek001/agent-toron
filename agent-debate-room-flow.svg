@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1440"
+  height="1080"
+  viewBox="0 0 1440 1080"
+  role="img"
+  aria-labelledby="diagram-title diagram-desc"
+>
+  <title id="diagram-title">Agent Debate Room 작동 흐름</title>
+  <desc id="diagram-desc">
+    사용자가 토론 주제와 역할을 정하면 Debate Room UI가 Debate Harness를 기준으로 라운드를 실행하고,
+    현재 MVP에서는 Mock Debate Engine이 공개 발언과 최종 리포트를 생성하며, 다음 단계에서는 OpenClaw Gateway로
+    실제 역할별 에이전트 세션을 연결하는 흐름도입니다.
+  </desc>
+
+  <defs>
+    <filter id="soft-shadow" x="-12%" y="-12%" width="124%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#1f2a29" flood-opacity="0.10" />
+    </filter>
+
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#0f8b6f" />
+    </marker>
+
+    <marker id="muted-arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#68716d" />
+    </marker>
+
+    <style>
+      .bg { fill: #f6f4ef; }
+      .band { fill: #ebe7dc; opacity: 0.42; }
+      .card { fill: #fffdf8; stroke: #d8d2c4; stroke-width: 1.4; filter: url(#soft-shadow); }
+      .subcard { fill: #f8f6f0; stroke: #d8d2c4; stroke-width: 1.2; }
+      .dark-card { fill: #1f2a29; }
+      .accent-card { fill: #d8efe7; stroke: #91cdbd; stroke-width: 1.2; }
+      .future-card { fill: #eef5f7; stroke: #b8cbd4; stroke-width: 1.2; }
+      .title { fill: #202826; font: 800 38px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .subtitle { fill: #68716d; font: 500 17px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .section { fill: #202826; font: 780 21px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .card-title { fill: #202826; font: 760 18px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .card-copy { fill: #4f5a56; font: 500 14px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .small { fill: #68716d; font: 650 12px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .small-dark { fill: #fffdf8; font: 650 12px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .tiny { fill: #68716d; font: 650 11px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0.3px; }
+      .pill { fill: #ebe7dc; }
+      .pill-text { fill: #4f5a56; font: 720 12px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .white-title { fill: #fffdf8; font: 780 17px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .white-copy { fill: #d8d2c4; font: 500 13px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .line { fill: none; stroke: #0f8b6f; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow); }
+      .muted-line { fill: none; stroke: #68716d; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#muted-arrow); }
+      .dash-line { fill: none; stroke: #68716d; stroke-width: 2; stroke-dasharray: 7 7; stroke-linecap: round; marker-end: url(#muted-arrow); }
+      .role-title { fill: #fffdf8; font: 780 14px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .role-copy { fill: rgba(255,253,248,0.86); font: 500 12px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .number { fill: #0f8b6f; font: 820 15px Inter, Pretendard, "Segoe UI", sans-serif; letter-spacing: 0; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1080" />
+  <rect class="band" x="0" y="642" width="1440" height="246" />
+
+  <g transform="translate(64 54)">
+    <text class="title" x="0" y="0">Agent Debate Room 작동 흐름</text>
+    <text class="subtitle" x="0" y="34">
+      주제를 넣으면 역할별 AI가 짧게 토론하고, 사람의 개입을 반영해 실행 가능한 결론으로 정리합니다.
+    </text>
+  </g>
+
+  <g transform="translate(1118 46)">
+    <rect class="dark-card" x="0" y="0" width="258" height="56" rx="8" />
+    <text class="small-dark" x="18" y="22">현재 상태</text>
+    <text class="white-title" x="18" y="43">Mock harness now</text>
+    <circle cx="229" cy="28" r="7" fill="#3cc9a7" />
+  </g>
+
+  <!-- Top product path -->
+  <g transform="translate(64 146)">
+    <rect class="card" x="0" y="0" width="310" height="298" rx="8" />
+    <text class="number" x="24" y="35">01</text>
+    <text class="card-title" x="55" y="35">사람이 목표를 넣는다</text>
+    <text class="card-copy" x="24" y="70">토론하고 싶은 주제와 참여 역할을 정하고</text>
+    <text class="card-copy" x="24" y="92">Start 버튼으로 세션을 시작합니다.</text>
+
+    <rect class="subcard" x="24" y="124" width="262" height="42" rx="8" />
+    <text class="small" x="42" y="151">Topic input</text>
+    <text class="tiny" x="168" y="151">사용자 질문 / 제품 결정</text>
+
+    <rect class="subcard" x="24" y="178" width="262" height="42" rx="8" />
+    <text class="small" x="42" y="205">Role toggles</text>
+    <text class="tiny" x="168" y="205">6개 역할 선택</text>
+
+    <rect class="accent-card" x="24" y="232" width="262" height="42" rx="8" />
+    <text class="small" x="42" y="259">Start · Stop · Reset</text>
+    <text class="tiny" x="190" y="259">세션 제어</text>
+  </g>
+
+  <path class="line" d="M394 295 C420 295 425 295 452 295" />
+
+  <g transform="translate(454 146)">
+    <rect class="card" x="0" y="0" width="374" height="298" rx="8" />
+    <text class="number" x="24" y="35">02</text>
+    <text class="card-title" x="55" y="35">Debate Room UI</text>
+    <text class="card-copy" x="24" y="70">설정, 채팅 로그, 개입 입력, 요약 패널을</text>
+    <text class="card-copy" x="24" y="92">한 화면에서 이어 붙입니다.</text>
+
+    <rect x="24" y="124" width="326" height="136" rx="8" fill="#f8f6f0" stroke="#d8d2c4" />
+    <rect x="38" y="140" width="76" height="104" rx="6" fill="#ebe7dc" />
+    <text class="tiny" x="50" y="164">Setup</text>
+    <rect x="128" y="140" width="132" height="104" rx="6" fill="#fffdf8" stroke="#d8d2c4" />
+    <text class="tiny" x="146" y="164">Message log</text>
+    <rect x="146" y="180" width="96" height="10" rx="5" fill="#d8efe7" />
+    <rect x="146" y="200" width="74" height="10" rx="5" fill="#ebe7dc" />
+    <rect x="274" y="140" width="62" height="104" rx="6" fill="#eef5f7" stroke="#d8d2c4" />
+    <text class="tiny" x="286" y="164">Summary</text>
+
+    <rect class="pill" x="24" y="273" width="126" height="26" rx="13" />
+    <text class="pill-text" x="39" y="291">session state</text>
+    <rect class="pill" x="160" y="273" width="96" height="26" rx="13" />
+    <text class="pill-text" x="177" y="291">round</text>
+    <rect class="pill" x="266" y="273" width="84" height="26" rx="13" />
+    <text class="pill-text" x="283" y="291">export</text>
+  </g>
+
+  <path class="line" d="M848 295 C874 295 880 295 906 295" />
+
+  <g transform="translate(908 146)">
+    <rect class="card" x="0" y="0" width="468" height="298" rx="8" />
+    <text class="number" x="24" y="35">03</text>
+    <text class="card-title" x="55" y="35">Debate Harness</text>
+    <text class="card-copy" x="24" y="70">`product-debate-v1`이 역할, 라운드,</text>
+    <text class="card-copy" x="24" y="92">최종 리포트 섹션을 제품 규칙으로 고정합니다.</text>
+
+    <rect class="subcard" x="24" y="124" width="190" height="122" rx="8" />
+    <text class="small" x="42" y="151">Roles</text>
+    <text class="tiny" x="42" y="178">Moderator · Builder</text>
+    <text class="tiny" x="42" y="199">Skeptic · Product · Risk</text>
+    <text class="tiny" x="42" y="220">Synthesizer</text>
+
+    <rect class="accent-card" x="236" y="124" width="208" height="122" rx="8" />
+    <text class="small" x="254" y="151">Rounds</text>
+    <text class="tiny" x="254" y="178">0. Frame topic</text>
+    <text class="tiny" x="254" y="199">1-2. Debate &amp; response</text>
+    <text class="tiny" x="254" y="220">3. Synthesis</text>
+
+    <rect class="pill" x="24" y="269" width="175" height="26" rx="13" />
+    <text class="pill-text" x="42" y="287">finalReportSections</text>
+    <rect class="pill" x="212" y="269" width="168" height="26" rx="13" />
+    <text class="pill-text" x="231" y="287">public messages only</text>
+  </g>
+
+  <!-- Engine path -->
+  <path class="line" d="M690 444 C690 476 690 486 690 512" />
+  <path class="line" d="M1142 444 C1142 476 1142 486 1142 512" />
+
+  <g transform="translate(454 512)">
+    <rect class="card" x="0" y="0" width="374" height="126" rx="8" />
+    <text class="card-title" x="24" y="34">현재 MVP: Mock Debate Engine</text>
+    <text class="card-copy" x="24" y="64">역할별 공개 발언을 순서대로 만들고,</text>
+    <text class="card-copy" x="24" y="86">사람 개입에는 해당 역할 응답을 붙입니다.</text>
+    <rect class="pill" x="24" y="103" width="122" height="26" rx="13" />
+    <text class="pill-text" x="41" y="121">build script</text>
+    <rect class="pill" x="156" y="103" width="102" height="26" rx="13" />
+    <text class="pill-text" x="174" y="121">sleep 420ms</text>
+  </g>
+
+  <g transform="translate(908 512)">
+    <rect class="card" x="0" y="0" width="468" height="126" rx="8" />
+    <text class="card-title" x="24" y="34">다음 단계: OpenClaw Gateway Adapter</text>
+    <text class="card-copy" x="24" y="64">같은 UI와 Harness를 유지하면서, mock 엔진을</text>
+    <text class="card-copy" x="24" y="86">역할별 OpenClaw session/sub-agent로 교체합니다.</text>
+    <rect class="pill" x="24" y="103" width="136" height="26" rx="13" />
+    <text class="pill-text" x="42" y="121">create session</text>
+    <rect class="pill" x="170" y="103" width="150" height="26" rx="13" />
+    <text class="pill-text" x="188" y="121">send role message</text>
+  </g>
+
+  <path class="dash-line" d="M828 575 C858 575 874 575 906 575" />
+  <text class="tiny" x="840" y="558">adapter boundary</text>
+
+  <!-- Round loop -->
+  <g transform="translate(64 694)">
+    <text class="section" x="0" y="0">라운드 실행 루프</text>
+    <text class="subtitle" x="0" y="31">Moderator가 방향을 잡고, 전문 역할들이 발언하며, 사람의 개입은 다음 응답과 최종 요약에 반영됩니다.</text>
+  </g>
+
+  <g transform="translate(64 750)">
+    <rect class="dark-card" x="0" y="0" width="176" height="96" rx="8" />
+    <text class="role-title" x="20" y="31">Moderator</text>
+    <text class="role-copy" x="20" y="56">주제 정리</text>
+    <text class="role-copy" x="20" y="76">발언 순서 관리</text>
+  </g>
+
+  <path class="line" d="M252 798 C280 798 286 798 314 798" />
+
+  <g transform="translate(316 750)">
+    <rect x="0" y="0" width="236" height="96" rx="8" fill="#0f8b6f" />
+    <text class="role-title" x="20" y="31">Builder · Skeptic</text>
+    <text class="role-copy" x="20" y="56">구현 가능성과 실패 모드</text>
+    <text class="role-copy" x="20" y="76">MVP 범위를 밀고 당김</text>
+  </g>
+
+  <path class="line" d="M564 798 C592 798 598 798 626 798" />
+
+  <g transform="translate(628 750)">
+    <rect x="0" y="0" width="236" height="96" rx="8" fill="#3b6f8f" />
+    <text class="role-title" x="20" y="31">Product · Risk</text>
+    <text class="role-copy" x="20" y="56">사용자 가치, 인증, 비용</text>
+    <text class="role-copy" x="20" y="76">운영 리스크를 점검</text>
+  </g>
+
+  <path class="muted-line" d="M876 798 C904 798 910 798 938 798" />
+
+  <g transform="translate(940 750)">
+    <rect class="future-card" x="0" y="0" width="184" height="96" rx="8" />
+    <text class="card-title" x="20" y="31">Human</text>
+    <text class="card-copy" x="20" y="56">전체 또는 특정 역할에</text>
+    <text class="card-copy" x="20" y="76">질문·조건 추가</text>
+  </g>
+
+  <path class="line" d="M1136 798 C1164 798 1170 798 1198 798" />
+
+  <g transform="translate(1200 750)">
+    <rect x="0" y="0" width="176" height="96" rx="8" fill="#604b8f" />
+    <text class="role-title" x="20" y="31">Synthesizer</text>
+    <text class="role-copy" x="20" y="56">결론·근거·반대 의견</text>
+    <text class="role-copy" x="20" y="76">다음 액션 정리</text>
+  </g>
+
+  <path class="dash-line" d="M1032 846 C1032 900 230 900 230 852" />
+  <text class="tiny" x="556" y="918">개입은 Moderator 라우팅을 거쳐 다음 라운드 또는 최종 리포트에 반영</text>
+
+  <!-- Output -->
+  <g transform="translate(64 956)">
+    <rect class="card" x="0" y="0" width="1312" height="82" rx="8" />
+    <text class="number" x="24" y="34">04</text>
+    <text class="card-title" x="55" y="34">결과물: 토론 로그 + 최종 의사결정 문서</text>
+    <text class="card-copy" x="55" y="61">메시지 로그는 세션 기록으로 남고, SummaryPanel은 Conclusion · Evidence · Objections · Open Questions · Next Actions를 보여줍니다.</text>
+
+    <rect class="accent-card" x="1014" y="22" width="124" height="38" rx="8" />
+    <text class="small" x="1045" y="46">Final report</text>
+    <rect class="subcard" x="1150" y="22" width="126" height="38" rx="8" />
+    <text class="small" x="1189" y="46">Export JSON</text>
+  </g>
+</svg>
