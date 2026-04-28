@@ -2951,23 +2951,37 @@ function liteRoleAction(role) {
   return normalizeText(role.actionBias || role.firstAction || role.experiment || role.action || role.assignment || "이번 주에 확인할 작은 행동을 정합니다.");
 }
 
+function conciseDebateFact(value) {
+  const text = normalizeText(value);
+  if (!text) return "";
+  if (/\[작성 폼|아이디어\s*\/|현재 상황:|핵심 고민:|고객 후보:|제약 조건:/i.test(text)) return "";
+  if (text.length > 90) return "";
+  return text;
+}
+
 function debateLiteFactLine(session) {
   const agenda = session.liteAgenda || {};
   const memory = agenda.agendaState?.memory || {};
   const facts = [];
   if (memory.product) facts.push(`대상: ${memory.product}`);
   if (Array.isArray(memory.candidates) && memory.candidates.length) {
-    facts.push(`후보: ${memory.candidates.slice(0, 4).join(", ")}`);
+    const rawCandidates = [...new Set(memory.candidates.map((item) => normalizeText(item)).filter(Boolean))];
+    const candidates = rawCandidates
+      .filter((candidate) => !rawCandidates.some((other) => other !== candidate && other.includes(candidate)))
+      .slice(0, 3);
+    if (candidates.length) facts.push(`후보: ${candidates.join(", ")}`);
   }
   if (Array.isArray(memory.facts) && memory.facts.length) {
-    facts.push(memory.facts.slice(0, 4).join(", "));
+    const conciseFacts = memory.facts.map(conciseDebateFact).filter(Boolean).slice(0, 4);
+    if (conciseFacts.length) facts.push(conciseFacts.join(", "));
   }
   if (memory.constraint) facts.push(`제약: ${memory.constraint}`);
   if (memory.constraints) {
     const constraints = Array.isArray(memory.constraints) ? memory.constraints.join(", ") : normalizeText(memory.constraints);
     if (constraints) facts.push(`제약: ${constraints}`);
   }
-  return clip(facts.join(" / ") || normalizeText(agenda.summary) || session.topic, 260);
+  const summary = normalizeText(agenda.summary).split(/[.。]/)[0];
+  return clip(facts.join(" / ") || summary || session.topic, 260);
 }
 
 function buildDebateLiteScript(session, rolePlan) {
@@ -2982,7 +2996,7 @@ function buildDebateLiteScript(session, rolePlan) {
     roleId: role.id,
     roleName: `${role.name} (Agent ${index + 1})`,
     round: 1,
-    content: `제 입장은 분명합니다. ${liteRoleStance(role)} 사용자 맥락은 ${factLine}이므로, 저는 ${liteRoleOption(role)}부터 비교해야 한다고 봅니다. 첫 행동은 ${liteRoleAction(role)}`,
+    content: `제 입장은 분명합니다. ${liteRoleStance(role)} 사용자 맥락은 ${factLine}입니다. 그래서 저는 ${liteRoleOption(role)}부터 비교해야 한다고 봅니다. 첫 행동은 ${liteRoleAction(role)}`,
   });
   const rebuttal = (role, index) => {
     const target = previous(role);
