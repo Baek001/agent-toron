@@ -2951,6 +2951,45 @@ function liteRoleAction(role) {
   return normalizeText(role.actionBias || role.firstAction || role.experiment || role.action || role.assignment || "이번 주에 확인할 작은 행동을 정합니다.");
 }
 
+function trimSentenceEnd(text) {
+  return normalizeText(text).replace(/[.!?。]+$/g, "").trim();
+}
+
+function ensureSentence(text) {
+  const value = normalizeText(text);
+  if (!value) return "";
+  return /[.!?。]$/.test(value) ? value : `${value}.`;
+}
+
+function softenKoreanStatement(text) {
+  let value = trimSentenceEnd(text);
+  if (!value) return "";
+  value = value
+    .replace(/다고 반박합니다$/g, "다는 점을 봐야 해요")
+    .replace(/다고 지적합니다$/g, "다는 점을 봐야 해요")
+    .replace(/해야 한다$/g, "해야 해요")
+    .replace(/봐야 한다$/g, "봐야 해요")
+    .replace(/미뤄야 한다$/g, "미뤄야 해요")
+    .replace(/검증해야 한다$/g, "검증해야 해요")
+    .replace(/주장합니다$/g, "보자는 쪽이에요")
+    .replace(/따집니다$/g, "따져봐야 해요")
+    .replace(/제안합니다$/g, "제안할게요");
+  return ensureSentence(value);
+}
+
+function debateContextPhrase(session) {
+  const factLine = debateLiteFactLine(session);
+  return factLine ? `현재 조건은 ${factLine}입니다.` : "";
+}
+
+function debateActionPhrase(role) {
+  return ensureSentence(trimSentenceEnd(liteRoleAction(role)));
+}
+
+function debateChallengePhrase(role) {
+  return softenKoreanStatement(liteRoleChallenge(role));
+}
+
 function conciseDebateFact(value) {
   const text = normalizeText(value);
   if (!text) return "";
@@ -2987,26 +3026,43 @@ function debateLiteFactLine(session) {
 function buildDebateLiteScript(session, rolePlan) {
   const roles = rolePlan.roles;
   const [first, second, third] = roles;
-  const factLine = debateLiteFactLine(session);
+  const contextLine = debateContextPhrase(session);
   const roleLabel = (role) => role.name.replace(/\s*\(Agent\s*\d+\)\s*$/i, "");
   const previous = (role) => roles[(roles.indexOf(role) + roles.length - 1) % roles.length] || first;
-  const next = (role) => roles[(roles.indexOf(role) + 1) % roles.length] || second;
-  const opening = (role, index) => makeDebateLiteMessage({
-    session,
-    roleId: role.id,
-    roleName: `${role.name} (Agent ${index + 1})`,
-    round: 1,
-    content: `제 입장은 분명합니다. ${liteRoleStance(role)} 사용자 맥락은 ${factLine}입니다. 그래서 저는 ${liteRoleOption(role)}부터 비교해야 한다고 봅니다. 첫 행동은 ${liteRoleAction(role)}`,
-  });
+  const opening = (role, index) => {
+    const option = liteRoleOption(role);
+    const stance = softenKoreanStatement(liteRoleStance(role));
+    const action = debateActionPhrase(role);
+    const templates = [
+      `저는 ${option}부터 보자는 쪽이에요. ${contextLine} ${stance} 이번 주에 바로 할 일은 ${action}`,
+      `${roleLabel(first)} 말처럼 빠른 반응도 중요하지만, 저는 "${option}" 선택지를 먼저 확인해야 한다고 봐요. ${contextLine} ${stance} 그래서 첫 움직임은 ${action}`,
+      `저는 여기서 욕심내면 순서가 꼬인다고 봐요. "${option}" 선택지는 지금 당장 밀기보다 기준을 세우는 역할입니다. ${stance} 먼저 ${action}`,
+    ];
+    return makeDebateLiteMessage({
+      session,
+      roleId: role.id,
+      roleName: `${role.name} (Agent ${index + 1})`,
+      round: 1,
+      content: templates[index] || templates[0],
+    });
+  };
   const rebuttal = (role, index) => {
     const target = previous(role);
-    const nextRole = next(role);
+    const option = liteRoleOption(role);
+    const targetName = roleLabel(target);
+    const challenge = debateChallengePhrase(role);
+    const action = debateActionPhrase(role);
+    const templates = [
+      `${targetName} 말도 맞지만, 그대로 가면 중요한 걸 놓칠 수 있어요. ${challenge} 그래서 저는 "${option}" 선택지를 버리지 말고, 판단 기준을 "${trimSentenceEnd(action)}"로 잡아야 한다고 봐요.`,
+      `저는 ${targetName} 의견이 조금 낙관적이라고 봅니다. ${challenge} "${option}" 쪽에서는 말보다 "${trimSentenceEnd(action)}"가 실제 신호인지 먼저 확인해야 해요.`,
+      `${targetName} 쪽 논리는 이해하지만, 지금 그 순서로 가면 준비 비용이 먼저 커질 수 있어요. ${challenge} 그래서 저는 오늘 결론을 "${option}" 하나로 몰기보다 "${trimSentenceEnd(action)}"까지 확인한 뒤 움직이자는 쪽입니다.`,
+    ];
     return makeDebateLiteMessage({
       session,
       roleId: role.id,
       roleName: `${role.name} (Agent ${index + 1})`,
       round: 2,
-      content: `${roleLabel(target)} 의견에는 동의하는 부분이 있지만 그대로 가면 놓치는 게 있습니다. ${liteRoleChallenge(role)} 그래서 저는 "${liteRoleOption(nextRole)}" 선택지와 비교하더라도, 오늘 결정 기준은 "${liteRoleAction(role)}"입니다.`,
+      content: templates[index] || templates[0],
     });
   };
 
@@ -3072,14 +3128,14 @@ async function buildDebateLiteInterventionResponses(session, content, round, run
       roleId: mediator.id,
       roleName: `${mediator.name} (Agent ${roles.indexOf(mediator) + 1})`,
       round,
-      content: `좋습니다. 방금 개입은 토론의 기준을 바꿉니다. 제 입장은 여전히 "${liteRoleStance(mediator)}"이지만, 이제 "${content}"를 만족하지 못하면 이 선택지도 약해집니다. 그래서 다음 확인 행동은 ${liteRoleAction(mediator)}`,
+      content: `그 조건이면 기준을 조금 바꿔야겠어요. 저는 여전히 ${softenKoreanStatement(liteRoleStance(mediator))} 다만 "${content}"를 만족하지 못하면 이 선택지는 바로 약해집니다. 그래서 다음 확인 행동은 ${debateActionPhrase(mediator)}`,
     }),
     makeDebateLiteMessage({
       session,
       roleId: nextRole.id,
       roleName: `${nextRole.name} (Agent ${roles.indexOf(nextRole) + 1})`,
       round,
-      content: `저는 그 기준을 적용해도 "${liteRoleOption(nextRole)}" 선택지를 비교 대상에서 빼면 안 된다고 봅니다. ${liteRoleChallenge(nextRole)} 방금 조건까지 포함해도 당장 확인할 일은 ${liteRoleAction(nextRole)}`,
+      content: `저는 그 조건을 넣어도 ${liteRoleOption(nextRole)} 선택지를 비교 대상에서 빼면 안 된다고 봐요. ${debateChallengePhrase(nextRole)} 지금 바로 확인할 일은 ${debateActionPhrase(nextRole)}`,
     }),
   ];
 }
@@ -3743,8 +3799,10 @@ function buildRolePrompt({ session, role, round, intervention }) {
     "명령 실행, 파일 읽기, 파일 쓰기, 네트워크 호출을 하지 마세요. 이 요청은 텍스트 발언 생성만 허용합니다.",
     "사람의 채팅은 특정 역할 대상이 아니라 전체 토론 흐름에 들어온 개입입니다. 자연스럽게 이어받으세요.",
     "영어 제품명은 가능하면 한국어 표기로 바꾸세요. 예: OpenClaw는 오픈클로, Codex는 코덱스, Claude는 클로드.",
-    "조언자처럼 포괄적으로 말하지 말고, 이 역할이 맡은 선택지를 실제 사람처럼 1인칭으로 주장하세요.",
-    "사용자가 말한 고객, 제약, 후보 선택지, 현재 상황 중 최소 하나를 반드시 집어서 말하세요.",
+    "보고서 말투나 템플릿 말투를 쓰지 말고, 회의실에서 서로 의견을 주고받는 사람처럼 말하세요.",
+    "이 역할이 맡은 선택지를 1인칭으로 밀되, 상대 역할의 약점을 직접 찌르세요.",
+    "사용자가 말한 고객, 제약, 후보 선택지, 현재 상황 중 최소 하나를 자연스럽게 집어서 말하세요.",
+    "같은 문장틀을 반복하지 마세요. 특히 '제 입장은 분명합니다', '사용자 맥락은', '오늘 결정 기준은' 같은 고정 표현은 쓰지 마세요.",
     "금지: '고객 니즈를 파악해야 합니다', '시장성을 검토해야 합니다', '차별화가 중요합니다', '리스크를 고려해야 합니다'처럼 일반론만 말하기. 이런 표현을 쓰려면 바로 뒤에 오늘/이번 주에 할 구체 행동을 붙이세요.",
     "",
     `토론 주제: ${session.topic}`,
@@ -3762,13 +3820,13 @@ function buildRolePrompt({ session, role, round, intervention }) {
     transcript || "아직 발언이 없습니다.",
     "",
     "응답 형식:",
-    "- 2~5문장",
+    "- 2~4문장",
     "- 한국어만 사용",
-    "- 첫 문장에 이 역할의 주장 또는 반박이 분명해야 함",
-    "- 라운드 1이면 자기 선택지를 주장하고 첫 실행안을 제시",
-    "- 라운드 2 이상이면 이전 역할 중 하나를 직접 언급해 반박하거나 보완",
+    "- 첫 문장은 바로 주장이나 반박으로 시작. 인사, 요약, 메타 발언 금지",
+    "- 라운드 1이면 자기 선택지를 밀고, 왜 다른 선택지보다 먼저인지 말하기",
+    "- 라운드 2 이상이면 이전 역할 이름을 직접 부르며 반박하거나 보완하기",
     "- 사람의 채팅이나 이전 발언을 한 가지 이상 이어받아야 함",
-    "- 마지막 문장은 다음 행동, 확인 기준, 중단 기준 중 하나로 끝내기",
+    "- 마지막 문장은 사용자가 이번 주에 할 행동, 확인 기준, 중단 기준 중 하나로 끝내기",
     "",
     "지금 바로 위 토론 주제에 대한 실제 발언만 출력하세요. 추가 주제를 요청하거나 대기하지 마세요.",
   ].join("\n");
@@ -3790,11 +3848,13 @@ function buildCodexRolePrompt({ session, role, round, intervention }) {
     transcript || "아직 이전 발언이 없습니다. 이 주제에 대한 첫 발언을 하세요.",
     "",
     "위 토론 주제에 대해 지금 바로 이 역할의 실제 발언만 작성하세요.",
-    "조언자처럼 넓게 말하지 말고, 이 역할의 선택지를 1인칭으로 주장하거나 이전 발언을 반박하세요.",
-    "사용자가 말한 고객, 제약, 후보 선택지, 현재 상황 중 최소 하나를 반드시 집으세요.",
-    "라운드 1이면 자기 선택지와 첫 행동을 말하고, 라운드 2 이상이면 이전 역할 하나를 직접 언급해 반박하거나 보완하세요.",
+    "보고서 말투나 템플릿 말투를 쓰지 말고, 회의실에서 서로 의견을 주고받는 사람처럼 말하세요.",
+    "이 역할의 선택지를 1인칭으로 주장하거나 이전 발언을 직접 반박하세요.",
+    "사용자가 말한 고객, 제약, 후보 선택지, 현재 상황 중 최소 하나를 자연스럽게 집으세요.",
+    "라운드 1이면 자기 선택지와 첫 행동을 말하고, 라운드 2 이상이면 이전 역할 하나의 이름을 직접 부르며 반박하거나 보완하세요.",
+    "'제 입장은 분명합니다', '사용자 맥락은', '오늘 결정 기준은' 같은 고정 표현은 쓰지 마세요.",
     "준비됐다는 말, 주제를 달라는 말, 파일/작업공간 언급, 내부 추론 공개는 금지입니다.",
-    "한국어 2~5문장으로만 답하세요.",
+    "한국어 2~4문장으로만 답하세요.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -3908,10 +3968,12 @@ function buildHeuristicReport(session) {
 
 function mockRoleResponse({ session, role, round, intervention }) {
   const chatLine = intervention ? ` 방금 사람은 "${intervention}"라고 끼어들었습니다.` : "";
+  const stance = softenKoreanStatement(role.description);
+  const action = ensureSentence(role.instruction || role.description);
   if (round >= 2) {
-    return `${role.name} 입장에서 저는 앞선 의견을 그대로 따르기보다 한 번 좁혀 보겠습니다.${chatLine} 제 주장은 "${role.description}"이고, 지금은 말보다 오늘 실행할 기준이 필요합니다. 그래서 다음 행동은 ${role.instruction || role.description}`;
+    return `저는 앞선 의견을 그대로 따라가기엔 아직 걸리는 지점이 있어요.${chatLine} ${stance} 말보다 중요한 건 오늘 확인할 행동이고, 다음 행동은 ${action}`;
   }
-  return `${role.name} 입장에서 제 주장은 "${role.description}"입니다.${chatLine} 이 선택지가 맞는지는 추상 검토가 아니라 사용자가 말한 조건 안에서 바로 확인해야 합니다. 첫 행동은 ${role.instruction || role.description}`;
+  return `저는 이쪽을 먼저 봐야 한다고 생각해요.${chatLine} ${stance} 이 선택지가 맞는지는 추상 검토가 아니라 사용자가 말한 조건 안에서 확인해야 하니, 첫 행동은 ${action}`;
 }
 
 function chooseNextRole(session) {
