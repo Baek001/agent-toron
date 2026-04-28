@@ -52,7 +52,8 @@
         }
 
         button,
-        input {
+        input,
+        textarea {
             font: inherit;
         }
 
@@ -132,6 +133,7 @@
         }
 
         .app.chat-focus .main-panel .decision-board,
+        .app.chat-focus .main-panel .intake-panel,
         .app.chat-focus .main-panel .composer {
             width: min(800px, 100%);
             margin-inline: auto;
@@ -141,7 +143,8 @@
             box-shadow: 0 14px 36px rgba(32, 33, 35, 0.08);
         }
 
-        .app.chat-focus .main-panel .decision-board {
+        .app.chat-focus .main-panel .decision-board,
+        .app.chat-focus .main-panel .intake-panel {
             margin-bottom: 12px;
         }
 
@@ -159,6 +162,7 @@
         }
 
         .app.debate-mode .main-panel .decision-board,
+        .app.debate-mode .main-panel .intake-panel,
         .app.debate-mode .main-panel .composer {
             display: none;
         }
@@ -583,6 +587,107 @@
             line-height: 1.35;
         }
 
+        .intake-panel {
+            display: grid;
+            width: min(800px, 100%);
+            gap: 12px;
+            margin: 0 auto 12px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 14px 36px rgba(32, 33, 35, 0.07);
+        }
+
+        .intake-panel.hidden {
+            display: none;
+        }
+
+        .intake-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .intake-title {
+            display: grid;
+            gap: 3px;
+        }
+
+        .intake-title strong {
+            font-size: 0.88rem;
+        }
+
+        .intake-title span,
+        .intake-helper {
+            color: var(--muted);
+            font-size: 0.74rem;
+            line-height: 1.4;
+        }
+
+        .intake-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 9px;
+            border: 1px solid rgba(16, 163, 127, 0.34);
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: #08735d;
+            font-size: 0.74rem;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+
+        .intake-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        .intake-field {
+            display: grid;
+            gap: 5px;
+        }
+
+        .intake-field.wide {
+            grid-column: 1 / -1;
+        }
+
+        .intake-field label {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 750;
+        }
+
+        .intake-field textarea {
+            width: 100%;
+            min-height: 66px;
+            max-height: 150px;
+            resize: vertical;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            outline: none;
+            background: #ffffff;
+            color: var(--text);
+            padding: 9px 10px;
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
+        .intake-field textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.12);
+        }
+
+        .intake-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
         .composer input {
             min-width: 0;
             flex: 1;
@@ -962,6 +1067,16 @@
                 grid-template-columns: 1fr;
             }
 
+            .intake-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .intake-actions,
+            .intake-head {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
             .composer {
                 flex-direction: column;
             }
@@ -1032,6 +1147,24 @@
                 </div>
                 <div class="decision-grid" id="decisionGrid"></div>
             </div>
+
+            <section class="intake-panel hidden" id="intakePanel" aria-label="토론 입력 폼">
+                <div class="intake-head">
+                    <div class="intake-title">
+                        <strong id="intakeTitle">토론 정보 채우기</strong>
+                        <span id="intakeDescription">아는 것만 적고 모르면 비워두세요.</span>
+                    </div>
+                    <span class="intake-badge" id="intakeTypeBadge">기본</span>
+                </div>
+                <div class="intake-grid" id="intakeFields"></div>
+                <div class="intake-actions">
+                    <span class="intake-helper">빈칸은 자동으로 “모르겠음”으로 처리하고, 그 자체를 토론 쟁점으로 삼습니다.</span>
+                    <button class="button button-primary" id="intakeSubmitBtn" type="button">
+                        <span>폼 내용 보내기</span>
+                        <i data-lucide="clipboard-check" size="17"></i>
+                    </button>
+                </div>
+            </section>
 
             <form class="composer" id="topicForm">
                 <input id="mainInput" type="text" autocomplete="off" placeholder="직접 입력하거나 위에서 사업 결정 방향을 고르세요.">
@@ -1125,10 +1258,132 @@
         const runtimeSetupLink = document.getElementById("runtimeSetupLink");
         const decisionBoard = document.getElementById("decisionBoard");
         const decisionGrid = document.getElementById("decisionGrid");
+        const intakePanel = document.getElementById("intakePanel");
+        const intakeTitle = document.getElementById("intakeTitle");
+        const intakeDescription = document.getElementById("intakeDescription");
+        const intakeTypeBadge = document.getElementById("intakeTypeBadge");
+        const intakeFields = document.getElementById("intakeFields");
+        const intakeSubmitBtn = document.getElementById("intakeSubmitBtn");
 
         const runtimeStorageKey = "debate-runtime-preference";
         const apiKeyStorageKey = (provider) => `debate-runtime-api-key-${provider}`;
         const apiKeyProviders = new Set(["openai", "anthropic", "gemini", "openrouter"]);
+        const intakeFieldKeys = ["idea", "situation", "concern", "options", "audience", "constraints", "desiredOutput"];
+
+        const intakeProfiles = {
+            businessSales: {
+                id: "businessSales",
+                badge: "사업 / 판매",
+                title: "판매 전략 작성 폼",
+                description: "무엇을 팔지, 누구에게 팔지, 어떤 제약이 있는지부터 정리합니다.",
+                defaultTrack: "growth",
+                labels: {
+                    idea: "아이디어 / 팔려는 것",
+                    situation: "현재 상황",
+                    concern: "핵심 고민",
+                    options: "생각 중인 판매 방식",
+                    audience: "고객 후보",
+                    constraints: "제약 조건",
+                    desiredOutput: "원하는 결과",
+                },
+                placeholders: {
+                    idea: "예: 감자 판매, 로컬 농산물 정기배송",
+                    situation: "예: 직접 재배 중, 아직 아이디어 단계, 지인에게만 판매 중",
+                    concern: "예: 누구에게 팔지, 온라인/오프라인 중 어디가 맞을지",
+                    options: "예: 직거래, 식당 납품, 스마트스토어, 지역 장터",
+                    audience: "예: 개인 소비자, 식당, 마트, 급식 업체",
+                    constraints: "예: 보관 기간, 물량, 포장, 배송, 예산",
+                    desiredOutput: "예: 첫 판매 채널과 2주 실행 순서",
+                },
+                defaults: {
+                    desiredOutput: "판매 전략과 실행 순서",
+                },
+            },
+            businessGeneral: {
+                id: "businessGeneral",
+                badge: "사업 결정",
+                title: "사업 의사결정 작성 폼",
+                description: "아이디어, 고객, 자원, 제약을 정리해 토론 가능한 질문으로 바꿉니다.",
+                defaultTrack: "idea",
+                labels: {
+                    idea: "아이디어 / 주제",
+                    situation: "현재 상황",
+                    concern: "핵심 고민",
+                    options: "생각 중인 선택지",
+                    audience: "대상 고객 / 사용자",
+                    constraints: "제약 조건",
+                    desiredOutput: "원하는 결과",
+                },
+                placeholders: {
+                    idea: "예: AI 학습 도우미, 지역 농산물 판매",
+                    situation: "예: 아이디어 단계, MVP 제작 중, 고객 인터뷰 전",
+                    concern: "예: 만들지 말지, 누구에게 팔지, 무엇부터 만들지",
+                    options: "예: A 기능 먼저, B 고객군 먼저, 무료 체험 후 유료화",
+                    audience: "예: 대학생, 소상공인, 직장인, 내부 팀",
+                    constraints: "예: 예산, 시간, 개발 인력, 법/운영 리스크",
+                    desiredOutput: "예: 검증 순서, 역할별 찬반, 다음 행동",
+                },
+                defaults: {
+                    desiredOutput: "토론 질문과 다음 실행 순서",
+                },
+            },
+            careerChoice: {
+                id: "careerChoice",
+                badge: "진로 / 선택",
+                title: "선택 고민 작성 폼",
+                description: "현재 위치와 선택지를 정리해 찬반이 갈리는 질문으로 바꿉니다.",
+                defaultTrack: "",
+                labels: {
+                    idea: "결정해야 할 선택",
+                    situation: "현재 상황",
+                    concern: "가장 고민되는 점",
+                    options: "선택지",
+                    audience: "영향받는 사람",
+                    constraints: "제약 조건",
+                    desiredOutput: "원하는 결과",
+                },
+                placeholders: {
+                    idea: "예: 취업을 할지 창업을 할지",
+                    situation: "예: 졸업 예정, 직장 재직 중, 준비 기간 6개월",
+                    concern: "예: 실패 리스크, 시간, 비용, 후회",
+                    options: "예: A 회사 지원, 시험 준비, 1년 유예",
+                    audience: "예: 나, 가족, 팀원",
+                    constraints: "예: 돈, 시간, 체력, 대안 경로",
+                    desiredOutput: "예: 선택 기준과 리스크 비교",
+                },
+                defaults: {
+                    desiredOutput: "선택 기준과 실행 계획",
+                },
+            },
+            generic: {
+                id: "generic",
+                badge: "기본",
+                title: "토론 주제 작성 폼",
+                description: "주제, 고민, 선택지, 제약을 채우면 토론 질문이 선명해집니다.",
+                defaultTrack: "",
+                labels: {
+                    idea: "아이디어 / 주제",
+                    situation: "현재 상황",
+                    concern: "고민거리",
+                    options: "선택지",
+                    audience: "영향받는 사람",
+                    constraints: "제약 조건",
+                    desiredOutput: "원하는 결과",
+                },
+                placeholders: {
+                    idea: "무엇에 대해 토론하고 싶은가요?",
+                    situation: "지금 어디까지 진행됐나요?",
+                    concern: "무엇을 결정하지 못하고 있나요?",
+                    options: "이미 생각 중인 후보가 있나요?",
+                    audience: "누구에게 영향을 주는 문제인가요?",
+                    constraints: "시간, 돈, 인력, 기술, 법, 장소 같은 제한은?",
+                    desiredOutput: "결론, 실행계획, 찬반토론, 리스크 분석 중 무엇이 필요한가요?",
+                },
+                defaults: {
+                    desiredOutput: "결론과 다음 행동",
+                },
+            },
+        };
 
         const decisionTracks = [
             {
@@ -1254,7 +1509,7 @@
                 ],
             },
             {
-                match: ["사업", "수익", "가격", "시장", "고객", "제품", "mvp", "서비스", "투자"],
+                match: ["사업", "수익", "가격", "시장", "고객", "제품", "mvp", "서비스", "투자", "판매", "팔", "마케팅", "영업", "판로"],
                 reason: "사업 판단 의제로 보고 시장성, 실행성, 고객 가치를 나눠 보겠습니다.",
                 roles: [
                     {
@@ -1317,6 +1572,7 @@
             rolePlanPreview: null,
             rolePlanPreviewKey: "",
             agendaBusy: false,
+            intakeDraft: null,
             phase: "idle",
             roles: roleSets[3].roles,
             sessionId: "",
@@ -1467,6 +1723,39 @@
         }
 
         function localRolePlanForAgenda(topic) {
+            if (state.selectedDecisionTrack === "growth" || state.intakeDraft?.profileId === "businessSales") {
+                const product = state.agendaState?.memory?.product || state.intakeDraft?.values?.idea || "상품";
+                return normalizeRolePlan({
+                    reason: "판매 전략 문제로 보고 고객 채널, 구매 메시지, 운영 병목을 나누어 봅니다.",
+                    source: "local",
+                    roles: [
+                        {
+                            id: "agent1",
+                            name: "채널 실험가",
+                            purpose: `${product}를 가장 빨리 실제 고객에게 보여줄 판매 채널을 고릅니다.`,
+                            lens: "접근 가능성",
+                            assignment: "직거래, 온라인, 납품 등 가능한 판매 채널의 우선순위를 맡깁니다.",
+                            callSignal: "첫 고객을 만날 경로를 분리해서 보기 위해 호출합니다.",
+                        },
+                        {
+                            id: "agent2",
+                            name: "구매메시지 설계자",
+                            purpose: "고객이 반응할 차별점, 제안 문장, 첫 구매 이유를 다듬습니다.",
+                            lens: "메시지와 차별화",
+                            assignment: "왜 이 상품을 지금 사야 하는지와 어떤 포지셔닝이 통할지 맡깁니다.",
+                            callSignal: "판매 문구와 차별화 관점을 따로 보기 위해 호출합니다.",
+                        },
+                        {
+                            id: "agent3",
+                            name: "판매운영 현실가",
+                            purpose: "포장, 배송, 보관, 마진 같은 첫 판매 병목을 따집니다.",
+                            lens: "운영 가능성",
+                            assignment: "첫 판매에서 실제로 막히는 운영 조건과 최소 실행 순서를 맡깁니다.",
+                            callSignal: "좋은 전략이 현실 운영에서 깨지는지 확인하기 위해 호출합니다.",
+                        },
+                    ],
+                });
+            }
             if (state.selectedDecisionTrack === "customer") {
                 const candidates = Array.isArray(state.agendaState?.memory?.candidates)
                     ? state.agendaState.memory.candidates
@@ -1564,6 +1853,7 @@
         function setMainComposerEnabled(enabled) {
             mainInput.disabled = !enabled;
             mainSendBtn.disabled = !enabled;
+            setIntakeEnabled(enabled && Boolean(state.intakeDraft) && !state.debateStarted);
             setDecisionBoardEnabled(enabled && state.phase === "idle" && !state.pendingTopic);
             updateAgendaStartButton();
         }
@@ -1641,6 +1931,147 @@
             });
         }
 
+        function profileForTrack(trackId) {
+            if (["customer", "growth", "pricing"].includes(trackId)) return intakeProfiles.businessSales;
+            if (["idea", "mvp", "execution", "pivot"].includes(trackId)) return intakeProfiles.businessGeneral;
+            return null;
+        }
+
+        function profileForText(text) {
+            const value = String(text || "").toLowerCase();
+            if (/(감자|판매|팔|영업|판로|마케팅|첫\s*고객|고객|시장|가격|수익|사업|창업|제품|서비스|스토어|납품|도매|소매)/i.test(value)) {
+                return /(판매|팔|영업|판로|마케팅|첫\s*고객|납품|도매|소매|스토어|감자)/i.test(value)
+                    ? intakeProfiles.businessSales
+                    : intakeProfiles.businessGeneral;
+            }
+            if (/(진로|취업|이직|퇴사|커리어|직장|공부|시험|로스쿨|자격증|대학|대학원)/i.test(value)) {
+                return intakeProfiles.careerChoice;
+            }
+            return intakeProfiles.generic;
+        }
+
+        function inferIdeaFromText(text, profile) {
+            const value = String(text || "").trim();
+            if (!value) return "";
+            if (profile.id === "businessSales") {
+                const productMatch = value.match(/([가-힣A-Za-z0-9 ]{1,36}?)(?:을|를)?\s*(?:어떻게\s*)?(?:팔|판매|납품)/);
+                if (productMatch?.[1]) return `${productMatch[1].trim()} 판매`;
+            }
+            return clipText(value.replace(/[.!?。！？]+$/g, ""), 80);
+        }
+
+        function buildIntakeDraft(seedText = "", trackId = "") {
+            const profile = profileForTrack(trackId) || profileForText(seedText);
+            const values = {
+                idea: inferIdeaFromText(seedText, profile),
+                situation: "",
+                concern: seedText.trim(),
+                options: "",
+                audience: "",
+                constraints: "",
+                desiredOutput: profile.defaults.desiredOutput,
+            };
+            return {
+                profileId: profile.id,
+                trackId: trackId || profile.defaultTrack || "",
+                values,
+            };
+        }
+
+        function intakeProfileForDraft(draft = state.intakeDraft) {
+            return intakeProfiles[draft?.profileId] || intakeProfiles.generic;
+        }
+
+        function setIntakePanelVisible(visible) {
+            intakePanel.classList.toggle("hidden", !visible);
+        }
+
+        function renderIntakePanel() {
+            const draft = state.intakeDraft;
+            if (!draft) {
+                setIntakePanelVisible(false);
+                return;
+            }
+
+            const profile = intakeProfileForDraft(draft);
+            intakeTitle.textContent = profile.title;
+            intakeDescription.textContent = profile.description;
+            intakeTypeBadge.textContent = profile.badge;
+            intakeFields.innerHTML = "";
+
+            intakeFieldKeys.forEach((key) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = `intake-field${key === "concern" || key === "desiredOutput" ? " wide" : ""}`;
+
+                const label = document.createElement("label");
+                label.htmlFor = `intake-${key}`;
+                label.textContent = profile.labels[key];
+
+                const textarea = document.createElement("textarea");
+                textarea.id = `intake-${key}`;
+                textarea.dataset.key = key;
+                textarea.placeholder = profile.placeholders[key] || "모르면 비워두세요.";
+                textarea.value = draft.values?.[key] || "";
+
+                wrapper.append(label, textarea);
+                intakeFields.appendChild(wrapper);
+            });
+
+            setIntakePanelVisible(true);
+        }
+
+        function collectIntakeValues() {
+            const values = {};
+            intakeFields.querySelectorAll("textarea[data-key]").forEach((textarea) => {
+                values[textarea.dataset.key] = textarea.value.trim();
+            });
+            return values;
+        }
+
+        function formatIntakeMessage(values, draft = state.intakeDraft) {
+            const profile = intakeProfileForDraft(draft);
+            const lineFor = (key) => `${profile.labels[key]}: ${values[key] || "모르겠음"}`;
+            return [
+                `[작성 폼: ${profile.badge}]`,
+                ...intakeFieldKeys.map(lineFor),
+            ].join("\n");
+        }
+
+        function showIntakeFromText(text, trackId = "") {
+            state.intakeDraft = buildIntakeDraft(text, trackId);
+            if (state.intakeDraft.trackId && !state.selectedDecisionTrack) {
+                state.selectedDecisionTrack = state.intakeDraft.trackId;
+            }
+            renderIntakePanel();
+        }
+
+        function buildIntakeIntroMessage(text, draft = state.intakeDraft) {
+            const profile = intakeProfileForDraft(draft);
+            const idea = draft?.values?.idea || text;
+            return [
+                `${profile.badge} 주제로 잡아볼게요.`,
+                "",
+                `지금 초안은 "${idea}"입니다. 바로 토론하면 너무 넓어질 수 있어서, 아래 작성 폼에 아는 것만 채워주세요.`,
+                "모르는 칸은 비워둬도 됩니다. 비어 있는 정보는 에이전트들이 따져볼 쟁점으로 남겨두겠습니다.",
+            ].join("\n");
+        }
+
+        async function submitIntakeForm() {
+            if (!state.intakeDraft || state.busy || state.agendaBusy || !state.runtime.ready) return;
+            const values = collectIntakeValues();
+            state.intakeDraft.values = values;
+            const message = formatIntakeMessage(values);
+            setIntakePanelVisible(false);
+            await submitAgendaText(message, { fromIntake: true });
+        }
+
+        function setIntakeEnabled(enabled) {
+            intakeSubmitBtn.disabled = !enabled;
+            intakeFields.querySelectorAll("textarea").forEach((textarea) => {
+                textarea.disabled = !enabled;
+            });
+        }
+
         function beginDecisionTrack(trackId) {
             const track = decisionTracks.find((item) => item.id === trackId);
             if (!track || state.busy || !state.runtime.ready || state.debateStarted) return;
@@ -1669,6 +2100,7 @@
             state.phase = "agenda";
 
             setDecisionBoardVisible(false);
+            showIntakeFromText(track.seed, track.id);
             renderMessage(mainChatBox, track.title, "user", "사용자", true);
             renderMessage(mainChatBox, track.opening, "main", "Main Agent", false);
             mainInput.placeholder = track.placeholder;
@@ -2195,22 +2627,20 @@ ${clipText(summary, 260)}`;
             const asksHowToAnswer = /(어떻게|어떤식|어떤 식|예시|답변|뭘 말|뭘 알려)/.test(userText);
             if (asksHowToAnswer) {
                 return {
-                    reply: `좋아요. "${topic}" 같은 주제는 단순히 찬반보다 당신의 현재 상황을 알아야 판단이 깊어집니다.
+                    reply: `좋아요. "${topic}"는 아래 정보가 있으면 토론 품질이 바로 좋아집니다.
 
-이런 형식으로 답해주면 좋습니다.
+- 아이디어 / 주제: 무엇을 하려는지
+- 현재 상황: 지금 어디까지 왔는지
+- 핵심 고민: 무엇을 결정하지 못하는지
+- 선택지: 이미 생각 중인 후보가 있는지
+- 대상: 고객, 사용자, 이해관계자가 누구인지
+- 제약 조건: 돈, 시간, 인력, 유통, 법, 장소 같은 제한
+- 원하는 결과: 결론, 실행계획, 리스크 분석 중 무엇이 필요한지
 
-- 현재 위치: 지금 어떤 단계에 있는지
-- 원하는 결과: 합격, 커리어 전환, 시간 확보, 불안 해소 중 무엇이 큰지
-- 제약: 시간, 비용, 체력, 가족/일, 대안 경로
-- 두려운 점: 실패했을 때 잃는 것, 하지 않았을 때 후회할 것
-
-예를 들면 이렇게요.
-"나는 지금 로스쿨 졸업을 앞두고 있고, 시험 준비에 1년을 더 쓸 수는 있지만 비용과 멘탈이 걱정된다. 변호사라는 직업 자체보다 법률 커리어의 안정성이 끌린다. 대안으로는 기업 법무나 다른 시험도 생각 중이다."
-
-이 중에서 편한 만큼만 말해 주세요. 제가 그 답을 바탕으로 더 좁혀 묻겠습니다.`,
+모르는 칸은 "모르겠음"으로 둬도 됩니다. 빈칸은 에이전트들이 따져볼 쟁점으로 남겨둘게요.`,
                     ready: false,
                     summary: state.agendaSummary,
-                    missing: ["현재 위치", "목표", "제약", "대안"],
+                    missing: ["현재 상황", "핵심 고민", "제약 조건", "원하는 결과"],
                     source: "local",
                 };
             }
@@ -2275,6 +2705,10 @@ ${clipText(summary, 260)}`;
 
         function localNarrowDebateFrame(topic, context) {
             const text = `${topic}\n${context}`;
+            if (/(팔|판매|영업|판로|마케팅|첫\s*고객|납품|도매|소매|스토어)/.test(text)) {
+                const product = state.intakeDraft?.values?.idea || "이 상품";
+                return `${product}를 어떤 고객, 채널, 차별점으로 먼저 팔아야 하는가?`;
+            }
             if (text.includes("아이디어 검증")) {
                 return "이 사업 아이디어가 실제 고객 문제를 충분히 해결하며 지금 검증할 가치가 있는가?";
             }
@@ -2389,10 +2823,15 @@ ${clipText(summary, 260)}`;
             }
             const text = mainInput.value.trim();
             if (!text || state.busy || !state.runtime.ready) return;
-
             mainInput.value = "";
-            renderMessage(mainChatBox, text, "user", "사용자", true);
+            await submitAgendaText(text);
+        }
 
+        async function submitAgendaText(text, { fromIntake = false } = {}) {
+            if (!text || state.busy || !state.runtime.ready) return;
+
+            const isFirstAgendaText = !state.pendingTopic;
+            renderMessage(mainChatBox, text, "user", "사용자", true);
             setDecisionBoardVisible(false);
 
             if (shouldStartDebateCommand(text) && state.pendingTopic) {
@@ -2400,12 +2839,30 @@ ${clipText(summary, 260)}`;
                 return;
             }
 
-            if (!state.pendingTopic) {
+            if (isFirstAgendaText) {
                 state.pendingTopic = text;
                 state.displayTopic = text;
+                state.phase = "agenda";
+                state.agendaMessages.push({ role: "user", content: text });
+                showIntakeFromText(text, state.selectedDecisionTrack);
+                state.agendaTopicDraft = state.intakeDraft?.values?.idea || text;
+                state.agendaSummary = `초기 입력: ${text}`;
+                state.agendaReady = false;
+                const intro = buildIntakeIntroMessage(text);
+                state.agendaMessages.push({ role: "main", content: intro });
+                renderMessage(mainChatBox, intro, "main", "Main Agent", false);
+                mainInput.placeholder = "아래 폼을 채우거나, 빠진 맥락을 한 문장으로 더 말해 주세요.";
+                setMainComposerEnabled(true);
+                updateAgendaStartButton();
+                mainInput.focus();
+                return;
             }
+
             state.phase = "agenda";
             state.agendaMessages.push({ role: "user", content: text });
+            if (fromIntake && state.intakeDraft?.trackId) {
+                state.selectedDecisionTrack = state.intakeDraft.trackId;
+            }
             state.agendaBusy = true;
             state.agendaAbortController = new AbortController();
             setMainComposerEnabled(false);
@@ -2430,7 +2887,7 @@ ${clipText(summary, 260)}`;
                 setMainSubmitLabel("보내기");
                 mainInput.placeholder = state.agendaReady
                     ? "역할 배정이 끝났습니다. 더 조정하거나 '토론 시작'을 누르세요."
-                    : "메인 에이전트에게 상황을 더 설명하거나 질문하세요.";
+                    : "빠진 맥락을 더 말하거나, 남은 칸을 채워 다시 보내세요.";
             } catch (error) {
                 if (error?.name !== "AbortError") {
                     renderMessage(
@@ -2537,6 +2994,7 @@ ${clipText(summary, 260)}`;
                 rolePlanPreview: null,
                 rolePlanPreviewKey: "",
                 agendaBusy: false,
+                intakeDraft: null,
                 phase: "idle",
                 roles: roleSets[3].roles,
                 sessionId: "",
@@ -2564,6 +3022,8 @@ ${clipText(summary, 260)}`;
             );
 
             setDecisionBoardVisible(true);
+            setIntakePanelVisible(false);
+            intakeFields.innerHTML = "";
             topicDisplay.textContent = "주제 대기 중";
             debateStatus.textContent = "아직 토론이 시작되지 않았습니다.";
             renderRoleStrip(roleSets[3].roles.map((role) => ({ ...role, name: "역할 대기" })));
@@ -2584,6 +3044,7 @@ ${clipText(summary, 260)}`;
         }
 
         topicForm.addEventListener("submit", handleTopicSubmit);
+        intakeSubmitBtn.addEventListener("click", submitIntakeForm);
         agendaStartBtn.addEventListener("click", handleAgendaStart);
         debateForm.addEventListener("submit", handleHumanIntervention);
         resetButton.addEventListener("click", resetDebate);

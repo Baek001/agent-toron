@@ -31,7 +31,7 @@ const CODEX_TIMEOUT_MS = Number.parseInt(process.env.CODEX_TIMEOUT_MS || process
 const CODEX_TEST_TIMEOUT_MS = Number.parseInt(process.env.CODEX_TEST_TIMEOUT_MS || "45000", 10);
 const AI_API_TIMEOUT_MS = Number.parseInt(process.env.AI_API_TIMEOUT_MS || "45000", 10);
 const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/+$/, "");
-const CODEX_WRAPPER = process.env.CODEX_WRAPPER || "D:\\bin\\codex-wrapper.ps1";
+const CODEX_WRAPPER = process.env.CODEX_WRAPPER || "";
 const NPM_GLOBAL_DIR = process.env.APPDATA ? path.join(process.env.APPDATA, "npm") : "";
 const OPENCLAW_ENTRY = NPM_GLOBAL_DIR
   ? path.join(NPM_GLOBAL_DIR, "node_modules", "openclaw", "openclaw.mjs")
@@ -541,21 +541,35 @@ function runtimeAuthState(runtime) {
   return "local";
 }
 
+async function buildCodexInvocation(args = []) {
+  if (process.platform === "win32" && CODEX_WRAPPER && (await fileExists(CODEX_WRAPPER))) {
+    return {
+      command: "powershell.exe",
+      args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CODEX_WRAPPER, ...args],
+    };
+  }
+
+  if (process.platform === "win32") {
+    const npmCodexCmd = NPM_GLOBAL_DIR ? path.join(NPM_GLOBAL_DIR, "codex.cmd") : "";
+    const codexCommand = npmCodexCmd && (await fileExists(npmCodexCmd)) ? npmCodexCmd : "codex";
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", codexCommand, ...args],
+    };
+  }
+
+  return {
+    command: "codex",
+    args,
+  };
+}
+
 async function getCodexLoginStatus() {
   if (!(await commandExists("codex"))) {
     return { ok: false, message: "코덱스 명령줄 도구를 찾지 못했습니다." };
   }
 
-  const invocation =
-    process.platform === "win32" && (await fileExists(CODEX_WRAPPER))
-      ? {
-          command: "powershell.exe",
-          args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CODEX_WRAPPER, "login", "status"],
-        }
-      : {
-          command: "codex",
-          args: ["login", "status"],
-        };
+  const invocation = await buildCodexInvocation(["login", "status"]);
 
   const result = await runCommand({
     ...invocation,
@@ -1145,7 +1159,7 @@ function buildAgendaPrompt({ topic, messages, agendaState }) {
   const trackInstruction = agendaDecisionTrackInstruction(decisionTrack);
   return [
     "사용자는 메인 AI와 편하게 대화하면서 '무엇을 토론하면 좋을지'를 같이 좁히고 있습니다.",
-    "당신은 접수 양식 담당자가 아니라, 사용자의 말을 먼저 이해하고 토론 가능한 질문으로 다듬어주는 한국어 대화 파트너입니다.",
+    "당신은 딱딱한 접수 양식 담당자가 아니라, 사용자의 말을 먼저 이해하고 입력 폼의 정보를 토론 가능한 질문으로 다듬어주는 한국어 대화 파트너입니다.",
     "메인 에이전트는 답변을 바로 생성하지 않고, 내부적으로 아래 순서로 동작합니다: 1) 최신 발화 의도 분류, 2) 의제 메모리 업데이트, 3) 다음 행동 결정, 4) 사용자에게 보일 답변 작성.",
     "",
     "현재 내부 상태:",
@@ -1153,6 +1167,8 @@ function buildAgendaPrompt({ topic, messages, agendaState }) {
     "",
     "반드시 지킬 것:",
     "- 현재 turnIntent를 최우선으로 따르세요. correction/understanding_check면 새 주제 질문을 하지 말고, 사용자가 실제로 물은 내용을 먼저 다시 잡으세요.",
+    "- 사용자의 발화에 '[작성 폼:'이 있으면 그것을 가장 신뢰도 높은 구조화 입력으로 보고, 각 항목을 agendaMemory의 facts/criteria/topicDraft에 반영하세요.",
+    "- 작성 폼에서 '모르겠음' 또는 빈 항목은 사용자가 실패한 것이 아니라 아직 검증해야 할 쟁점입니다. 그 항목을 비난하거나 다시 처음부터 쓰라고 하지 마세요.",
     "- agendaMemory에 이미 있는 facts, candidates, criteria를 모르는 척하지 마세요.",
     "- 사용자의 최신 발화에 먼저 답하세요. 질문을 받았으면 질문에 답하고, 불만을 말했으면 그 불만을 먼저 처리하세요.",
     "- 사용자가 이미 말한 내용을 모르는 척하지 마세요.",
@@ -1160,7 +1176,7 @@ function buildAgendaPrompt({ topic, messages, agendaState }) {
     "- 사용자가 방금 말한 구체 정보 1~2개를 짧게 반영하세요.",
     "- 사용자가 '내 고민을 이해했냐', '내가 뭐라고 했냐', '말했는데 왜 모르냐'처럼 확인하거나 불만을 말하면 먼저 사과하고 지금까지 이해한 내용을 요약하세요. 절대 새 주제를 처음부터 묻지 마세요.",
     "- 사용자가 '왜 이런 식으로 답변하냐', '내가 물은 건 그게 아니다'처럼 말하면 제품/메인 에이전트 답변에 대한 정정으로 해석하세요.",
-    "- 주제가 넓으면 2~3개의 좁힌 토론 후보를 제안하고, 가장 좋아 보이는 후보 하나를 추천하세요.",
+    "- 주제가 넓으면 '너무 넓다'고만 말하지 말고, 사용자가 채울 수 있는 항목이나 2~3개의 좁힌 토론 후보를 제안하고 가장 좋아 보이는 후보 하나를 추천하세요.",
     "- 충분히 판단이 끝났으면 ready를 true로 두되, reply에서는 사용자가 직접 시작하거나 버튼을 누르면 서브 에이전트 역할을 배정하겠다고 말하세요.",
     "- 아직 토론을 시작하지 마세요. 사용자가 명확히 시작하겠다고 하거나 별도 시작 버튼을 누르기 전까지는 계속 대화합니다.",
     "- 질문은 한 번에 하나만 하세요. 사용자가 답하기 쉬운 질문이어야 합니다.",
@@ -1229,7 +1245,7 @@ function detectAgendaDecisionTrack(topic = "", messages = []) {
   if (/(MVP|기능\s*우선순위|첫\s*버전|무엇부터\s*만들)/i.test(text)) return "mvp";
   if (/(아이디어\s*검증|사업\s*아이디어\s*검증)/i.test(text)) return "idea";
   if (/(가격|수익모델|과금)/i.test(text)) return "pricing";
-  if (/(마케팅|첫\s*고객|고객\s*확보|세일즈)/i.test(text)) return "growth";
+  if (/(마케팅|첫\s*고객|고객\s*확보|세일즈|영업|판로|판매|팔아야|팔지|납품|도매|소매|스마트스토어)/i.test(text)) return "growth";
   if (/(실행|운영|예산|외주|직접)/i.test(text)) return "execution";
   if (/(피벗|중단|계속할지|확장)/i.test(text)) return "pivot";
   return "";
@@ -1261,8 +1277,8 @@ function agendaDecisionTrackInstruction(track) {
     },
     growth: {
       label: "마케팅 / 첫 고객",
-      rule: "사용자가 말하는 내용은 첫 고객을 만날 채널과 메시지입니다. 접근 가능성과 빠른 피드백을 기준으로 좁히세요.",
-      question: "이번 주에 실제로 만날 수 있는 고객 채널은 어디인가요?",
+      rule: "사용자가 말하는 내용은 첫 고객을 만날 채널, 판매 방식, 메시지입니다. 접근 가능성, 지불 의사, 빠른 피드백을 기준으로 좁히세요.",
+      question: "이번 주에 실제로 판매를 시도할 수 있는 고객 채널은 어디인가요?",
     },
     execution: {
       label: "실행 / 운영",
@@ -1301,7 +1317,7 @@ function normalizeAgendaTrack(value) {
   if (lower === "mvp" || /mvp|기능\s*우선순위|제품\s*방향/.test(raw)) return "mvp";
   if (lower === "idea" || /아이디어\s*검증|사업\s*아이디어/.test(raw)) return "idea";
   if (lower === "pricing" || /가격|수익모델|과금/.test(raw)) return "pricing";
-  if (lower === "growth" || /마케팅|첫\s*고객|세일즈|고객\s*확보/.test(raw)) return "growth";
+  if (lower === "growth" || /마케팅|첫\s*고객|세일즈|고객\s*확보|영업|판로|판매|팔아야|팔지|납품|도매|소매|스마트스토어/.test(raw)) return "growth";
   if (lower === "execution" || /실행|운영|예산|팀/.test(raw)) return "execution";
   if (lower === "pivot" || /피벗|중단|확장/.test(raw)) return "pivot";
   return "";
@@ -1417,7 +1433,9 @@ function isSubstantiveAgendaText(text) {
 }
 
 function extractAgendaCandidates(text, track) {
-  if (track !== "customer") return [];
+  if (track !== "customer" && track !== "growth") return [];
+  const formAudience = normalizeText(text).match(/(?:고객\s*후보|대상\s*고객\s*\/\s*사용자|대상\s*고객|영향받는\s*사람):\s*([^\n]+)/);
+  const audienceText = formAudience?.[1] && !/모르겠음/.test(formAudience[1]) ? formAudience[1] : "";
   const known = [
     ["대학생", "대학생"],
     ["학부생", "대학생"],
@@ -1435,8 +1453,21 @@ function extractAgendaCandidates(text, track) {
     ["기업", "기업"],
     ["B2B", "B2B"],
     ["B2C", "B2C"],
+    ["식당", "식당"],
+    ["마트", "마트"],
+    ["급식", "급식 업체"],
+    ["개인 소비자", "개인 소비자"],
+    ["소비자", "개인 소비자"],
+    ["온라인", "온라인 구매자"],
+    ["스마트스토어", "온라인 구매자"],
+    ["직거래", "직거래 고객"],
   ];
   const found = [];
+  if (audienceText) {
+    for (const item of audienceText.split(/[,/·ㆍ]| 또는 | 혹은 |와 |과 /).map((value) => normalizeText(value)).filter(Boolean)) {
+      if (!found.includes(item)) found.push(item);
+    }
+  }
   for (const [word, canonical] of known) {
     if (new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(text) && !found.includes(canonical)) {
       found.push(canonical);
@@ -1446,7 +1477,17 @@ function extractAgendaCandidates(text, track) {
 }
 
 function extractAgendaProduct(text, track) {
-  if (track !== "customer" && !/팔|판매|강의|서비스|제품|앱|툴|플랫폼|교육|코스/.test(text)) return "";
+  if (track !== "customer" && !/팔|판매|강의|서비스|제품|앱|툴|플랫폼|교육|코스|납품|도매|소매/.test(text)) return "";
+  const formMatch = normalizeText(text).match(/(?:아이디어\s*\/\s*(?:팔려는\s*것|주제)|팔려는\s*것|아이디어\s*\/\s*주제):\s*([^\n]+)/);
+  if (formMatch?.[1] && !/모르겠음/.test(formMatch[1])) {
+    return clip(formMatch[1].replace(/\s*판매\s*$/u, "").trim(), 80);
+  }
+  const salesMatch = normalizeText(text).match(/([가-힣A-Za-z0-9 ]{1,40}?)(?:을|를)?\s*(?:어떻게\s*)?(?:팔|판매|납품|도매|소매)/);
+  if (salesMatch?.[1]) {
+    return salesMatch[1]
+      .replace(/^(내가|나는|제가|저는|지금|현재)\s*/g, "")
+      .trim();
+  }
   const match = normalizeText(text).match(/([가-힣A-Za-z0-9 ]{2,45}?(?:강의|서비스|제품|앱|툴|플랫폼|프로그램|교육|코스))(?:를|을|은|는|이|가|\s|$)/);
   if (!match) return "";
   return match[1]
@@ -1465,6 +1506,13 @@ function extractAgendaCriteria(text, track) {
     add(/접근|채널|만날|도달|광고|커뮤니티/, "접근 가능성");
     add(/시장|규모|경쟁|차별/, "시장성");
     add(/대학생|대학원생|학부생|석사|박사/, "고객군 비교");
+  }
+  if (track === "growth") {
+    add(/채널|온라인|오프라인|직거래|스토어|장터|납품|도매|소매|식당|마트/, "판매 채널");
+    add(/포장|배송|보관|물량|재고|유통|신선|상할|유통기한/, "운영 제약");
+    add(/차별|브랜드|스토리|품질|지역|원산지/, "차별화");
+    add(/가격|마진|수익|원가/, "가격과 마진");
+    add(/첫\s*고객|고객|구매|지불|재구매/, "구매 전환");
   }
   add(/시간|비용|예산|리소스/, "자원 제약");
   add(/검증|실험|인터뷰|랜딩|수동/, "검증 방법");
@@ -1488,6 +1536,14 @@ function buildAgendaDebateQuestion({ topic, track, candidates, product, context 
     }
     if (product) {
       return `${product}의 초기 고객을 누구로 잡아야 가장 빠르게 지불 의사를 검증할 수 있는가?`;
+    }
+  }
+  if (track === "growth") {
+    if (product && candidates.length >= 1) {
+      return `${product}를 ${candidates[0]}에게 어떤 채널과 메시지로 먼저 팔아야 하는가?`;
+    }
+    if (product) {
+      return `${product}를 어떤 고객, 채널, 차별점으로 먼저 팔아야 하는가?`;
     }
   }
   return suggestNarrowDebateFrames(topic, context).recommended;
@@ -2132,15 +2188,15 @@ function suggestBusinessDecisionFrame(text) {
       reason: "가격은 숫자보다 고객이 가치를 인정하는 순간과 연결되어야 합니다.",
     };
   }
-  if (includesAny(["마케팅", "첫 고객", "세일즈", "고객 확보"])) {
+  if (includesAny(["사업 / 판매", "판매", "팔", "팔아야", "팔지", "마케팅", "첫 고객", "세일즈", "고객 확보", "영업", "판로", "납품", "도매", "소매", "스마트스토어", "직거래"])) {
     return {
-      recommended: "초기 고객을 얻기 위해 어떤 채널과 메시지를 먼저 시험해야 하는가?",
+      recommended: "무엇을 누구에게, 어떤 채널과 차별점으로 먼저 팔아야 하는가?",
       options: [
-        "초기 고객을 얻기 위해 어떤 채널과 메시지를 먼저 시험해야 하는가?",
-        "콘텐츠, 커뮤니티, 광고, 콜드메일 중 무엇을 먼저 실험해야 하는가?",
-        "첫 10명의 고객을 만들기 위한 가장 짧은 경로는 무엇인가?",
+        "무엇을 누구에게, 어떤 채널과 차별점으로 먼저 팔아야 하는가?",
+        "직거래, 납품, 온라인 판매 중 어떤 채널을 먼저 검증해야 하는가?",
+        "첫 10명의 구매자를 만들기 위한 가장 짧은 경로는 무엇인가?",
       ],
-      reason: "막연한 마케팅보다 첫 고객을 만나는 채널과 메시지 실험이 중요합니다.",
+      reason: "막연한 판매 고민은 고객, 채널, 차별점, 운영 제약을 나누면 바로 실험 가능한 전략이 됩니다.",
     };
   }
   if (includesAny(["실행", "운영", "외주", "직접", "팀", "예산"])) {
@@ -2284,10 +2340,10 @@ function planAgendaTrackRoles(agenda = {}) {
   }
 
   if (track === "growth") {
-    return makePlan("첫 고객 확보 문제로 보고 채널, 메시지, 실행 속도를 나누어 봅니다.", [
-      { name: "채널 실험가", purpose: "가장 빨리 고객을 만날 채널을 고릅니다.", lens: "접근 가능성" },
-      { name: "메시지 편집자", purpose: "고객이 반응할 문제 문장과 제안을 다듬습니다.", lens: "메시지" },
-      { name: "세일즈 현실가", purpose: "첫 10명 확보를 위한 접촉 방식과 병목을 봅니다.", lens: "실행 가능성" },
+    return makePlan("판매/첫 고객 확보 문제로 보고 고객 채널, 차별화 메시지, 운영 병목을 나누어 봅니다.", [
+      { name: "채널 실험가", purpose: `${product}를 가장 빨리 실제 고객에게 보여줄 판매 채널을 고릅니다.`, lens: "접근 가능성" },
+      { name: "구매메시지 설계자", purpose: "고객이 반응할 차별점, 제안 문장, 첫 구매 이유를 다듬습니다.", lens: "메시지와 차별화" },
+      { name: "판매운영 현실가", purpose: "포장, 배송, 보관, 마진 같은 첫 판매 병목을 따집니다.", lens: "운영 가능성" },
     ]);
   }
 
@@ -3336,16 +3392,7 @@ async function runCodex(prompt, context) {
     outputPath,
     prompt,
   ];
-  const invocation =
-    process.platform === "win32" && (await fileExists(CODEX_WRAPPER))
-      ? {
-          command: "powershell.exe",
-          args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CODEX_WRAPPER, ...cliArgs],
-        }
-      : {
-          command: "codex",
-          args: cliArgs,
-        };
+  const invocation = await buildCodexInvocation(cliArgs);
 
   const result = await runCommand({
     ...invocation,
@@ -3413,19 +3460,12 @@ function runCommand({ command, args, cwd, timeoutMs, env = {} }) {
     let timedOut = false;
     let settled = false;
     let hardTimer = null;
-
-    const child = spawn(command, args, {
-      cwd,
-      env: { ...process.env, ...env },
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: process.platform !== "win32",
-    });
+    let timer = null;
 
     const finish = (payload) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       if (hardTimer) clearTimeout(hardTimer);
       resolve({
         exitCode: payload.exitCode,
@@ -3436,7 +3476,22 @@ function runCommand({ command, args, cwd, timeoutMs, env = {} }) {
       });
     };
 
-    const timer = setTimeout(() => {
+    let child;
+    try {
+      child = spawn(command, args, {
+        cwd,
+        env: { ...process.env, ...env },
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        detached: process.platform !== "win32",
+      });
+    } catch (error) {
+      stderr = appendLimited(stderr, error.message || String(error));
+      finish({ exitCode: 1, signal: null });
+      return;
+    }
+
+    timer = setTimeout(() => {
       timedOut = true;
       killProcessTree(child.pid);
       hardTimer = setTimeout(() => finish({ exitCode: null, signal: "TIMEOUT" }), 5000);
@@ -3947,7 +4002,16 @@ function buildMarkdownExport(session) {
 async function commandExists(command) {
   if (command === "openclaw" && (await fileExists(OPENCLAW_ENTRY))) return true;
   if (command === "claude" && (await fileExists(CLAUDE_ENTRY))) return true;
-  if (command === "codex" && (await fileExists(CODEX_WRAPPER))) return true;
+
+  if (command === "codex") {
+    const result = await runCommand({
+      ...(await buildCodexInvocation(["--version"])),
+      timeoutMs: 5000,
+      cwd: __dirname,
+      env: { NO_COLOR: "1", FORCE_COLOR: "0" },
+    });
+    return result.exitCode === 0;
+  }
 
   const probe = process.platform === "win32" ? "where.exe" : "which";
   const result = await runCommand({
