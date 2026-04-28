@@ -1750,7 +1750,7 @@
                 heading.textContent = role.name;
 
                 const copy = document.createElement("p");
-                copy.textContent = role.assignment || role.purpose;
+                copy.textContent = role.stance || role.assignment || role.purpose;
 
                 card.append(avatar, heading, copy);
             });
@@ -1767,7 +1767,11 @@
                     name: String(role.name || `서브 에이전트 ${index + 1}`).trim(),
                     purpose: String(role.purpose || role.description || "이 관점으로 검토합니다.").trim(),
                     lens: String(role.lens || role.purpose || "판단 기준").trim(),
+                    stance: String(role.stance || role.position || role.claim || role.assignment || role.purpose || "이 선택지를 주장합니다.").trim(),
+                    option: String(role.option || role.choice || role.channel || role.lens || "선택지").trim(),
                     assignment: String(role.assignment || role.instruction || role.purpose || "핵심 쟁점을 검토합니다.").trim(),
+                    mustChallenge: String(role.mustChallenge || role.challenge || role.counterTarget || role.rebuttal || role.callSignal || "다른 선택지의 약한 근거를 짚습니다.").trim(),
+                    actionBias: String(role.actionBias || role.firstAction || role.experiment || role.action || role.assignment || "이번 주에 확인할 첫 행동을 정합니다.").trim(),
                     callSignal: String(role.callSignal || role.reason || role.lens || "다른 관점을 분리해서 보기 위해 호출합니다.").trim(),
                     color: role.color,
                 })),
@@ -1778,32 +1782,44 @@
             if (state.selectedDecisionTrack === "growth" || state.intakeDraft?.profileId === "businessSales") {
                 const product = state.agendaState?.memory?.product || state.intakeDraft?.values?.idea || "상품";
                 return normalizeRolePlan({
-                    reason: "판매 전략 문제로 보고 고객 채널, 구매 메시지, 운영 병목을 나누어 봅니다.",
+                    reason: "판매 전략 문제로 보고 빠른 직거래, 반복 구매처 납품, 온라인 보류라는 상반된 선택지를 토론합니다.",
                     source: "local",
                     roles: [
                         {
                             id: "agent1",
-                            name: "채널 실험가",
-                            purpose: `${product}를 가장 빨리 실제 고객에게 보여줄 판매 채널을 고릅니다.`,
-                            lens: "접근 가능성",
-                            assignment: "직거래, 온라인, 납품 등 가능한 판매 채널의 우선순위를 맡깁니다.",
-                            callSignal: "첫 고객을 만날 경로를 분리해서 보기 위해 호출합니다.",
+                            name: "직거래 실험가",
+                            purpose: `${product}를 가장 빨리 현금화할 수 있는 지역 직거래부터 주장합니다.`,
+                            lens: "빠른 고객 반응",
+                            stance: `${product}는 배송과 큰 준비 전에 지역 직거래로 가격 반응부터 봐야 한다.`,
+                            option: "지역 직거래",
+                            assignment: "지금 당장 만날 수 있는 고객에게 어떻게 제안하고 얼마에 팔지 주장합니다.",
+                            mustChallenge: "납품은 단가 협상과 운반 부담이 생기고, 온라인은 준비 시간이 길다고 반박합니다.",
+                            actionBias: "지역 커뮤니티나 지인망에 예약 판매 글을 올리고 48시간 안에 문의 수를 봅니다.",
+                            callSignal: "가장 빠른 현금화 경로를 따로 보기 위해 호출합니다.",
                         },
                         {
                             id: "agent2",
-                            name: "구매메시지 설계자",
-                            purpose: "고객이 반응할 차별점, 제안 문장, 첫 구매 이유를 다듬습니다.",
-                            lens: "메시지와 차별화",
-                            assignment: "왜 이 상품을 지금 사야 하는지와 어떤 포지셔닝이 통할지 맡깁니다.",
-                            callSignal: "판매 문구와 차별화 관점을 따로 보기 위해 호출합니다.",
+                            name: "납품 옹호자",
+                            purpose: `${product}를 반복 구매처에 먼저 제안하는 입장을 맡습니다.`,
+                            lens: "반복 구매와 물량 소진",
+                            stance: `${product}는 개인 판매보다 식당이나 소상공인 납품으로 반복 수요를 먼저 검증해야 한다.`,
+                            option: "식당/소상공인 납품",
+                            assignment: "반복 구매 가능성이 있는 고객에게 어떤 단가와 샘플로 접근할지 주장합니다.",
+                            mustChallenge: "직거래는 빠르지만 반복 수요를 확인하기 약하고 주문 관리가 흩어질 수 있다고 반박합니다.",
+                            actionBias: "동네 식당이나 소상공인 10곳에 샘플, 단가표, 납품 가능일을 들고 제안합니다.",
+                            callSignal: "반복 구매와 물량 소진 관점을 따로 보기 위해 호출합니다.",
                         },
                         {
                             id: "agent3",
-                            name: "판매운영 현실가",
-                            purpose: "포장, 배송, 보관, 마진 같은 첫 판매 병목을 따집니다.",
-                            lens: "운영 가능성",
-                            assignment: "첫 판매에서 실제로 막히는 운영 조건과 최소 실행 순서를 맡깁니다.",
-                            callSignal: "좋은 전략이 현실 운영에서 깨지는지 확인하기 위해 호출합니다.",
+                            name: "온라인 보류론자",
+                            purpose: "온라인 판매를 첫 실험으로 두는 것의 포장, 배송, CS 부담을 따집니다.",
+                            lens: "운영 준비도",
+                            stance: "스마트스토어 같은 온라인 판매는 첫 실험이 아니라 오프라인 반응 뒤로 미뤄야 한다.",
+                            option: "온라인 보류",
+                            assignment: "온라인을 지금 시작하면 막히는 포장, 배송, CS 조건을 근거로 우선순위를 낮춥니다.",
+                            mustChallenge: "직거래와 납품이 만든 실제 문구와 가격 없이 온라인부터 열면 준비 비용만 커진다고 지적합니다.",
+                            actionBias: "직거래와 납품 반응에서 잘 먹힌 문구와 가격을 모은 뒤 상세페이지로 만듭니다.",
+                            callSignal: "온라인 판매의 운영 부담을 현실적으로 따지기 위해 호출합니다.",
                         },
                     ],
                 });
@@ -1816,7 +1832,7 @@
                 const first = candidates[0] || "첫 후보 고객";
                 const second = candidates[1] || "다른 후보 고객";
                 return normalizeRolePlan({
-                    reason: "고객/시장 결정으로 보고 후보 고객군, 구매 가능성, 검증 실험을 나누어 봅니다.",
+                    reason: "고객/시장 결정으로 보고 각 후보 고객군을 옹호하고, 마지막에는 구매검증 실험으로 갈등을 정리합니다.",
                     source: "local",
                     roles: [
                         {
@@ -1824,7 +1840,11 @@
                             name: `${first} 시장 옹호자`,
                             purpose: `${product}를 ${first}에게 먼저 팔 때의 강점과 접근 경로를 주장합니다.`,
                             lens: `${first}의 문제 절박도`,
+                            stance: `${product}는 ${first}에게 먼저 제안해야 한다.`,
+                            option: first,
                             assignment: `${first} 고객군의 강점, 접근 경로, 먼저 팔아야 하는 이유를 맡깁니다.`,
+                            mustChallenge: `${second}은 구매 의사나 접근 경로가 아직 덜 확실할 수 있다고 반박합니다.`,
+                            actionBias: `${first} 5명에게 이번 주 안에 문제 확인과 구매 의향을 직접 묻습니다.`,
                             callSignal: `${first} 관점을 독립적으로 보기 위해 호출합니다.`,
                         },
                         {
@@ -1832,7 +1852,11 @@
                             name: `${second} 시장 옹호자`,
                             purpose: `${product}를 ${second}에게 먼저 팔 때의 강점과 구매 가능성을 주장합니다.`,
                             lens: `${second}의 지불 의사`,
+                            stance: `${product}는 ${second}에게 먼저 검증해야 한다.`,
+                            option: second,
                             assignment: `${second} 고객군의 강점, 구매 가능성, 반대 논리를 맡깁니다.`,
+                            mustChallenge: `${first}은 접근은 쉬워도 돈을 내는 신호가 약할 수 있다고 반박합니다.`,
+                            actionBias: `${second} 5명에게 가격이 붙은 제안 문장을 보내 반응을 확인합니다.`,
                             callSignal: `${second} 관점을 독립적으로 보기 위해 호출합니다.`,
                         },
                         {
@@ -1840,7 +1864,11 @@
                             name: "구매검증 설계자",
                             purpose: "두 고객군 중 누가 실제로 돈과 시간을 쓸지 가장 작게 확인할 실험을 설계합니다.",
                             lens: "검증 순서와 성공 기준",
+                            stance: "고객군 논쟁은 의견이 아니라 같은 제안문으로 돈 낼 신호를 비교해야 한다.",
+                            option: "비교 검증",
                             assignment: "고객 인터뷰, 랜딩, 선결제 같은 최소 검증 실험을 제안합니다.",
+                            mustChallenge: "두 옹호자가 감으로 주장하지 않도록 같은 가격, 같은 기간, 같은 성공 기준을 요구합니다.",
+                            actionBias: "각 고객군 5명씩에게 같은 제안문을 보내 응답률, 선예약, 거절 이유를 비교합니다.",
                             callSignal: "논의를 실제 검증 행동으로 바꾸기 위해 호출합니다.",
                         },
                     ],
@@ -1858,7 +1886,11 @@
                 source: "local",
                 roles: base.roles.map((role) => ({
                     ...role,
+                    stance: role.stance || `${role.name} 입장에서는 ${role.purpose}`,
+                    option: role.option || role.lens,
                     assignment: `${role.purpose} 특히 "${role.lens}" 관점에서 첫 발언을 맡깁니다.`,
+                    mustChallenge: role.mustChallenge || `${role.lens}과 충돌하는 선택지의 약한 근거를 짚습니다.`,
+                    actionBias: role.actionBias || `${role.lens}을 확인할 수 있는 이번 주 행동 하나를 제안합니다.`,
                     callSignal: `${role.lens}을 따로 분리해서 보기 위해 호출합니다.`,
                 })),
             });
@@ -1866,19 +1898,19 @@
 
         function rolePlanKey(plan) {
             if (!plan) return "";
-            return [plan.reason, ...plan.roles.map((role) => `${role.name}:${role.assignment}`)].join("|");
+            return [plan.reason, ...plan.roles.map((role) => `${role.name}:${role.stance}:${role.actionBias}`)].join("|");
         }
 
         function formatRolePlanPreview(plan) {
             const lines = plan.roles.map((role, index) => {
-                return `${index + 1}. ${role.name}\n   임무: ${role.assignment || role.purpose}\n   호출 이유: ${role.callSignal || role.lens}`;
+                return `${index + 1}. ${role.name}\n   주장: ${role.stance || role.assignment || role.purpose}\n   첫 행동: ${role.actionBias || role.assignment || role.purpose}\n   반박할 지점: ${role.mustChallenge || role.callSignal || role.lens}`;
             });
             return [
                 "판단은 여기까지면 충분합니다. 이 의제로 토론을 열 때는 아래 서브 에이전트들을 호출하겠습니다.",
                 "",
                 `메인 판단: ${plan.reason}`,
                 "",
-                "역할 배정:",
+                "서브 에이전트 입장:",
                 ...lines,
             ].join("\n");
         }

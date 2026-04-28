@@ -2304,62 +2304,200 @@ function planAgendaTrackRoles(agenda = {}) {
   if (track === "customer") {
     const first = candidates[0] || "첫 후보 고객";
     const second = candidates[1] || "다른 후보 고객";
-    return makePlan("고객/시장 결정으로 보고 후보 고객군, 구매 가능성, 검증 실험을 나누어 봅니다.", [
+    return makePlan("고객/시장 결정으로 보고 각 후보 고객군을 옹호하고, 마지막에는 구매검증 실험으로 갈등을 정리합니다.", [
       {
         name: `${first} 시장 옹호자`,
         purpose: `${product}를 ${first}에게 먼저 팔 때의 강점과 접근 경로를 주장합니다.`,
         lens: `${first}의 문제 절박도`,
+        stance: `${product}는 ${first}에게 먼저 제안해야 한다.`,
+        option: first,
+        assignment: `${first} 고객군을 먼저 공략해야 하는 이유와 접근 경로를 구체적으로 주장합니다.`,
+        mustChallenge: `${second}은 구매 의사나 접근 경로가 아직 덜 확실할 수 있다고 반박합니다.`,
+        actionBias: `${first} 5명에게 이번 주 안에 문제 확인과 구매 의향을 직접 묻습니다.`,
       },
       {
         name: `${second} 시장 옹호자`,
         purpose: `${product}를 ${second}에게 먼저 팔 때의 강점과 구매 가능성을 주장합니다.`,
         lens: `${second}의 지불 의사`,
+        stance: `${product}는 ${second}에게 먼저 검증해야 한다.`,
+        option: second,
+        assignment: `${second} 고객군을 먼저 공략해야 하는 이유와 구매 가능성을 구체적으로 주장합니다.`,
+        mustChallenge: `${first}은 접근은 쉬워도 돈을 내는 신호가 약할 수 있다고 반박합니다.`,
+        actionBias: `${second} 5명에게 가격이 붙은 제안 문장을 보내 반응을 확인합니다.`,
       },
       {
         name: "구매검증 설계자",
         purpose: "두 고객군 중 누가 실제로 돈과 시간을 쓸지 가장 작게 확인할 실험을 설계합니다.",
         lens: "검증 순서와 성공 기준",
+        stance: "고객군 논쟁은 의견이 아니라 같은 제안문으로 돈 낼 신호를 비교해야 한다.",
+        option: "비교 검증",
+        assignment: "두 고객군을 같은 기준으로 비교할 최소 실험과 성공 기준을 정합니다.",
+        mustChallenge: "두 옹호자가 감으로 주장하지 않도록 같은 가격, 같은 기간, 같은 성공 기준을 요구합니다.",
+        actionBias: "각 고객군 5명씩에게 같은 제안문을 보내 응답률, 선예약, 거절 이유를 비교합니다.",
       },
     ]);
   }
 
   if (track === "mvp") {
-    return makePlan("MVP 범위 결정으로 보고 핵심 가치, 제거할 기능, 수동 검증을 나누어 봅니다.", [
-      { name: "핵심가치 수호자", purpose: "첫 버전에서 반드시 살아야 할 고객 가치를 고릅니다.", lens: "필수 가치" },
-      { name: "스코프 절단자", purpose: "지금 빼야 할 기능과 미뤄도 되는 기능을 분리합니다.", lens: "제외할 기능" },
-      { name: "수동검증 설계자", purpose: "개발 전에 손으로 확인할 수 있는 흐름을 제안합니다.", lens: "검증 순서" },
+    return makePlan("MVP 범위 결정으로 보고 핵심 가치, 제외할 기능, 수동 검증 방식을 서로 다른 주장으로 나눕니다.", [
+      {
+        name: "핵심가치 수호자",
+        purpose: "첫 버전에서 반드시 살아야 할 고객 가치를 고릅니다.",
+        lens: "필수 가치",
+        stance: "첫 버전은 고객이 돈이나 시간을 쓰는 핵심 가치 하나만 선명해야 한다.",
+        option: "핵심 기능 집중",
+        mustChallenge: "너무 많이 빼면 고객이 왜 써야 하는지 사라진다고 지적합니다.",
+        actionBias: "사용자가 반드시 경험해야 할 한 가지 순간을 문장으로 고정합니다.",
+      },
+      {
+        name: "스코프 절단자",
+        purpose: "지금 빼야 할 기능과 미뤄도 되는 기능을 분리합니다.",
+        lens: "제외할 기능",
+        stance: "첫 버전은 불편해도 검증에 필요 없는 기능을 과감히 빼야 한다.",
+        option: "기능 축소",
+        mustChallenge: "핵심가치라는 이름으로 구현 범위가 다시 커지는 것을 막습니다.",
+        actionBias: "이번 주에 만들 기능과 손으로 처리할 기능을 각각 3개 이하로 나눕니다.",
+      },
+      {
+        name: "수동검증 설계자",
+        purpose: "개발 전에 손으로 확인할 수 있는 흐름을 제안합니다.",
+        lens: "검증 순서",
+        stance: "코드를 만들기 전에 사람이 대신 처리해서 구매나 사용 신호부터 봐야 한다.",
+        option: "수동 운영 검증",
+        mustChallenge: "기능 논쟁이 길어지면 실제 사용 신호가 늦어진다고 반박합니다.",
+        actionBias: "랜딩, 설문, 수동 처리 중 하나로 3일 안에 첫 사용자 반응을 받습니다.",
+      },
     ]);
   }
 
   if (track === "pricing") {
-    return makePlan("가격/수익모델 결정으로 보고 구매 저항, 수익성, 과금 타이밍을 나누어 봅니다.", [
-      { name: "구매저항 분석가", purpose: "고객이 가격을 거절할 이유와 심리적 장벽을 봅니다.", lens: "가격 저항" },
-      { name: "수익성 검토자", purpose: "가격 구조가 비용과 지속성에 맞는지 따집니다.", lens: "단위경제" },
-      { name: "과금전략 설계자", purpose: "무료/유료 전환과 결제 시점을 제안합니다.", lens: "과금 타이밍" },
+    return makePlan("가격/수익모델 결정으로 보고 낮은 진입 가격, 지속 가능한 마진, 과금 시점을 서로 다른 주장으로 나눕니다.", [
+      {
+        name: "구매저항 분석가",
+        purpose: "고객이 가격을 거절할 이유와 심리적 장벽을 봅니다.",
+        lens: "가격 저항",
+        stance: "처음에는 결제 장벽을 낮춰 실제 구매 이유를 먼저 확인해야 한다.",
+        option: "낮은 진입 가격",
+        mustChallenge: "높은 가격은 검증 전에 거절 이유만 키울 수 있다고 반박합니다.",
+        actionBias: "낮은 가격 제안과 정상 가격 제안을 각각 소수 고객에게 보내 반응 차이를 봅니다.",
+      },
+      {
+        name: "수익성 검토자",
+        purpose: "가격 구조가 비용과 지속성에 맞는지 따집니다.",
+        lens: "단위경제",
+        stance: "처음부터 비용과 마진이 맞지 않는 가격은 고객 반응이 좋아도 위험하다.",
+        option: "마진 우선 가격",
+        mustChallenge: "낮은 가격 실험은 나중에 가격 인상을 어렵게 만들 수 있다고 지적합니다.",
+        actionBias: "원가, 운영 시간, 환불 비용을 넣어 최소 허용 가격을 계산합니다.",
+      },
+      {
+        name: "과금전략 설계자",
+        purpose: "무료/유료 전환과 결제 시점을 제안합니다.",
+        lens: "과금 타이밍",
+        stance: "가격보다 먼저 언제 결제를 요청할지가 구매 전환을 좌우한다.",
+        option: "과금 시점 조정",
+        mustChallenge: "가격만 바꾸면 구매 흐름의 막힌 지점을 놓칠 수 있다고 반박합니다.",
+        actionBias: "무료 체험, 예약금, 선결제 중 하나를 골라 결제 요청 시점을 실험합니다.",
+      },
     ]);
   }
 
   if (track === "growth") {
-    return makePlan("판매/첫 고객 확보 문제로 보고 고객 채널, 차별화 메시지, 운영 병목을 나누어 봅니다.", [
-      { name: "채널 실험가", purpose: `${product}를 가장 빨리 실제 고객에게 보여줄 판매 채널을 고릅니다.`, lens: "접근 가능성" },
-      { name: "구매메시지 설계자", purpose: "고객이 반응할 차별점, 제안 문장, 첫 구매 이유를 다듬습니다.", lens: "메시지와 차별화" },
-      { name: "판매운영 현실가", purpose: "포장, 배송, 보관, 마진 같은 첫 판매 병목을 따집니다.", lens: "운영 가능성" },
+    return makePlan("판매/첫 고객 확보 문제로 보고 빠른 직거래, 반복 구매처 납품, 온라인 보류라는 상반된 선택지를 토론합니다.", [
+      {
+        name: "직거래 실험가",
+        purpose: `${product}를 가장 빨리 현금화할 수 있는 지역 직거래부터 주장합니다.`,
+        lens: "빠른 고객 반응",
+        stance: `${product}는 배송과 큰 준비 전에 지역 직거래로 가격 반응부터 봐야 한다.`,
+        option: "지역 직거래",
+        assignment: "지금 당장 만날 수 있는 고객에게 어떻게 제안하고 얼마에 팔지 주장합니다.",
+        mustChallenge: "납품은 단가 협상과 운반 부담이 생기고, 온라인은 준비 시간이 길다고 반박합니다.",
+        actionBias: "지역 커뮤니티나 지인망에 예약 판매 글을 올리고 48시간 안에 문의 수를 봅니다.",
+      },
+      {
+        name: "납품 옹호자",
+        purpose: `${product}를 반복 구매처에 먼저 제안하는 입장을 맡습니다.`,
+        lens: "반복 구매와 물량 소진",
+        stance: `${product}는 개인 판매보다 식당이나 소상공인 납품으로 반복 수요를 먼저 검증해야 한다.`,
+        option: "식당/소상공인 납품",
+        assignment: "반복 구매 가능성이 있는 고객에게 어떤 단가와 샘플로 접근할지 주장합니다.",
+        mustChallenge: "직거래는 빠르지만 반복 수요를 확인하기 약하고 주문 관리가 흩어질 수 있다고 반박합니다.",
+        actionBias: "동네 식당이나 소상공인 10곳에 샘플, 단가표, 납품 가능일을 들고 제안합니다.",
+      },
+      {
+        name: "온라인 보류론자",
+        purpose: "온라인 판매를 첫 실험으로 두는 것의 포장, 배송, CS 부담을 따집니다.",
+        lens: "운영 준비도",
+        stance: "스마트스토어 같은 온라인 판매는 첫 실험이 아니라 오프라인 반응 뒤로 미뤄야 한다.",
+        option: "온라인 보류",
+        assignment: "온라인을 지금 시작하면 막히는 포장, 배송, CS 조건을 근거로 우선순위를 낮춥니다.",
+        mustChallenge: "직거래와 납품이 만든 실제 문구와 가격 없이 온라인부터 열면 준비 비용만 커진다고 지적합니다.",
+        actionBias: "직거래와 납품 반응에서 잘 먹힌 문구와 가격을 모은 뒤 상세페이지로 만듭니다.",
+      },
     ]);
   }
 
   if (track === "execution") {
-    return makePlan("실행/운영 판단으로 보고 자원 배분, 구현 방식, 운영 리스크를 나누어 봅니다.", [
-      { name: "자원 배분자", purpose: "시간, 돈, 인력 중 가장 부족한 자원 기준으로 우선순위를 잡습니다.", lens: "제약" },
-      { name: "빌드 전략가", purpose: "직접 개발, 외주, 노코드, 수동 운영 중 현실적인 길을 고릅니다.", lens: "구현 방식" },
-      { name: "운영 리스크 관리자", purpose: "CS, 법무, 품질, 반복 운영 부담을 미리 드러냅니다.", lens: "운영 부담" },
+    return makePlan("실행/운영 판단으로 보고 자원 집중, 구현 방식, 운영 리스크를 서로 다른 주장으로 나눕니다.", [
+      {
+        name: "자원 배분자",
+        purpose: "시간, 돈, 인력 중 가장 부족한 자원 기준으로 우선순위를 잡습니다.",
+        lens: "제약",
+        stance: "가장 부족한 자원 하나를 기준으로 이번 주 할 일과 버릴 일을 먼저 정해야 한다.",
+        option: "자원 집중",
+        mustChallenge: "구현 방식 논쟁이 자원 한계를 흐리게 만들 수 있다고 지적합니다.",
+        actionBias: "이번 주 투입 가능한 시간, 돈, 인력을 숫자로 적고 그 안에서 할 일 3개만 남깁니다.",
+      },
+      {
+        name: "빌드 전략가",
+        purpose: "직접 개발, 외주, 노코드, 수동 운영 중 현실적인 길을 고릅니다.",
+        lens: "구현 방식",
+        stance: "처음부터 완성형으로 만들지 말고 가장 빨리 사용 신호를 받을 구현 방식을 골라야 한다.",
+        option: "최소 구현",
+        mustChallenge: "자원 절약만 보다가 고객이 만질 수 있는 결과물이 늦어지는 것을 막습니다.",
+        actionBias: "직접 개발, 외주, 노코드, 수동 운영 중 7일 안에 보여줄 수 있는 방식을 고릅니다.",
+      },
+      {
+        name: "운영 리스크 관리자",
+        purpose: "CS, 법무, 품질, 반복 운영 부담을 미리 드러냅니다.",
+        lens: "운영 부담",
+        stance: "실행안은 팔린 뒤 감당할 운영 부담까지 포함해서 결정해야 한다.",
+        option: "운영 안전",
+        mustChallenge: "빠른 구현이나 판매가 CS, 품질, 법무 부담을 뒤로 밀 수 있다고 반박합니다.",
+        actionBias: "첫 고객 10명 기준으로 문의, 환불, 품질 문제를 누가 어떻게 처리할지 적습니다.",
+      },
     ]);
   }
 
   if (track === "pivot") {
-    return makePlan("피벗/중단 판단으로 보고 신호 해석, 중단 기준, 방향 전환안을 나누어 봅니다.", [
-      { name: "신호 판독자", purpose: "현재 고객 반응과 지표가 강한 신호인지 약한 신호인지 해석합니다.", lens: "신호 강도" },
-      { name: "중단 기준 관리자", purpose: "언제 접고 언제 더 투자할지 기준을 정합니다.", lens: "중단선" },
-      { name: "피벗 설계자", purpose: "고객군, 문제, 기능 중 무엇을 바꿀지 대안을 제안합니다.", lens: "전환 옵션" },
+    return makePlan("피벗/중단 판단으로 보고 계속할 근거, 중단 기준, 방향 전환안을 서로 다른 주장으로 나눕니다.", [
+      {
+        name: "신호 판독자",
+        purpose: "현재 고객 반응과 지표가 강한 신호인지 약한 신호인지 해석합니다.",
+        lens: "신호 강도",
+        stance: "약한 부정 신호만으로 접기보다 실제 고객 행동 데이터를 먼저 해석해야 한다.",
+        option: "계속 검증",
+        mustChallenge: "중단 기준이 너무 빠르면 아직 확인하지 못한 수요를 버릴 수 있다고 반박합니다.",
+        actionBias: "지금까지의 사용, 결제, 재방문, 추천 신호를 강한 신호와 약한 신호로 나눕니다.",
+      },
+      {
+        name: "중단 기준 관리자",
+        purpose: "언제 접고 언제 더 투자할지 기준을 정합니다.",
+        lens: "중단선",
+        stance: "계속할 이유보다 중단 기준을 먼저 정하지 않으면 비용이 계속 새어 나간다.",
+        option: "중단 기준",
+        mustChallenge: "희망적인 해석이 명확한 실패 신호를 덮을 수 있다고 지적합니다.",
+        actionBias: "2주 안에 달성하지 못하면 멈출 숫자 기준을 하나 정합니다.",
+      },
+      {
+        name: "피벗 설계자",
+        purpose: "고객군, 문제, 기능 중 무엇을 바꿀지 대안을 제안합니다.",
+        lens: "전환 옵션",
+        stance: "접기 전에 고객군, 문제, 제안 중 하나만 바꿔서 더 싼 실험을 해야 한다.",
+        option: "작은 피벗",
+        mustChallenge: "계속/중단의 이분법이 더 나은 전환 선택지를 놓칠 수 있다고 반박합니다.",
+        actionBias: "고객군, 문제, 제안 중 하나만 바꾼 새 실험을 1주일 안에 설계합니다.",
+      },
     ]);
   }
 
@@ -2370,12 +2508,14 @@ function buildRolePlannerPrompt({ topic, agenda }) {
   return [
     "사용자가 메인 에이전트와 사전 대화를 마쳤습니다.",
     "이제 Main Agent의 판단 결과를 바탕으로 실제로 호출할 서브 에이전트 3명을 설계하고 역할을 배정하세요.",
-    "역할은 서로 겹치지 않아야 하며, 사용자의 상황과 판단 기준에 맞아야 합니다.",
+    "역할은 서로 겹치지 않아야 하며, 사용자의 상황과 판단 기준에 맞는 서로 다른 선택지를 주장해야 합니다.",
     "역할명은 짧은 한국어 명사구로 쓰고, Main Agent, 진행자, 사회자 같은 이름은 쓰지 마세요.",
-    "각 역할은 토론에서 실제로 말할 관점이어야 하며, 각자 맡을 임무가 한 문장으로 분명해야 합니다.",
-    "역할 구성은 비판/대안/정리처럼 기계적인 기본값보다, 사용자의 실제 고민에 맞춘 호출 계획이어야 합니다.",
+    "각 역할은 회의에서 실제 사람이 말할 법한 입장이어야 하며, 자기 주장과 반박할 지점이 분명해야 합니다.",
+    "역할 구성은 비판/대안/정리처럼 기계적인 기본값보다, 사용자의 실제 고민에 맞춘 선택지 대결이어야 합니다.",
+    "각 역할은 stance(한 문장 주장), option(대표 선택지), mustChallenge(반박할 대상/논리), actionBias(바로 제안할 첫 행동)를 반드시 포함하세요.",
+    "상투적인 말 대신 사용자가 말한 고객, 제약, 후보 선택지를 직접 넣으세요.",
     "반드시 JSON 객체 하나만 출력하세요.",
-    '{"reason":"왜 이 역할 구성이 적절한지 한 문장","roles":[{"name":"역할명","purpose":"무엇을 검토할지","lens":"주요 관점","assignment":"이 에이전트에게 맡길 구체 임무 한 문장","callSignal":"왜 지금 이 에이전트를 호출하는지"}]}',
+    '{"reason":"왜 이 역할 구성이 적절한지 한 문장","roles":[{"name":"역할명","purpose":"무엇을 검토할지","lens":"주요 관점","stance":"토론에서 밀고 갈 한 문장 주장","option":"대표 선택지","assignment":"이 에이전트에게 맡길 구체 임무 한 문장","mustChallenge":"반박할 대상이나 논리","actionBias":"바로 제안할 첫 실행안","callSignal":"왜 지금 이 에이전트를 호출하는지"}]}',
     "",
     `토론 의제: ${topic}`,
     agenda.topicDraft ? `메인이 좁힌 토론 질문: ${agenda.topicDraft}` : "",
@@ -2395,8 +2535,9 @@ function rolePlannerSystemPrompt() {
   return [
     "당신은 토론 제품의 메인 오케스트레이터입니다.",
     "사용자와의 사전 대화를 바탕으로 어떤 서브 에이전트를 호출할지 정하고, 각 에이전트의 임무를 배정합니다.",
-    "역할은 구체적이고 서로 달라야 하며, 사용자의 실제 상황을 반영해야 합니다.",
+    "역할은 구체적이고 서로 달라야 하며, 사용자의 실제 상황을 반영한 선택지별 입장이어야 합니다.",
     "역할 이름은 짧고 사람이 이해하기 쉬워야 합니다.",
+    "각 역할은 회의 참가자처럼 자기 주장을 갖고, 다른 역할이 놓친 점을 반박할 수 있어야 합니다.",
     "출력은 JSON 객체 하나만 허용됩니다.",
   ].join("\n");
 }
@@ -2412,15 +2553,24 @@ function normalizeLiteRolePlan(value, fallback = null, source = "client") {
   const rawRoles = Array.isArray(value.roles) ? value.roles : [];
   const colors = ["#8a6419", "#0b7d68", "#326d8f"];
   const roles = rawRoles
-    .map((role, index) => ({
-      id: normalizeText(role.id).replace(/[^a-zA-Z0-9_-]/g, "") || `agent${index + 1}`,
-      name: clip(normalizeText(role.name), 26),
-      purpose: clip(normalizeText(role.purpose || role.description), 150),
-      lens: clip(normalizeText(role.lens || role.purpose || role.description), 90),
-      assignment: clip(normalizeText(role.assignment || role.task || role.instruction || role.purpose || role.description), 180),
-      callSignal: clip(normalizeText(role.callSignal || role.reason || role.why || role.lens), 140),
-      color: normalizeColor(role.color) || colors[index % colors.length],
-    }))
+    .map((role, index) => {
+      const purpose = clip(normalizeText(role.purpose || role.description), 150);
+      const lens = clip(normalizeText(role.lens || role.purpose || role.description), 90);
+      const assignment = clip(normalizeText(role.assignment || role.task || role.instruction || role.purpose || role.description), 180);
+      return {
+        id: normalizeText(role.id).replace(/[^a-zA-Z0-9_-]/g, "") || `agent${index + 1}`,
+        name: clip(normalizeText(role.name), 26),
+        purpose,
+        lens,
+        stance: clip(normalizeText(role.stance || role.position || role.claim || role.argument || purpose), 180),
+        option: clip(normalizeText(role.option || role.choice || role.channel || role.target || lens), 80),
+        assignment,
+        mustChallenge: clip(normalizeText(role.mustChallenge || role.challenge || role.counterTarget || role.rebuttal || role.callSignal || role.reason), 180),
+        actionBias: clip(normalizeText(role.actionBias || role.firstAction || role.experiment || role.action || role.nextAction || assignment), 180),
+        callSignal: clip(normalizeText(role.callSignal || role.reason || role.why || role.lens), 140),
+        color: normalizeColor(role.color) || colors[index % colors.length],
+      };
+    })
     .filter((role) => role.name && role.purpose && !/main\s*agent|메인\s*에이전트|진행자|사회자/i.test(role.name))
     .slice(0, 3);
 
@@ -2438,12 +2588,21 @@ function finalizeLiteRolePlan(plan, source = "heuristic") {
     .map((role, index) => {
       const purpose = clip(normalizeText(role.purpose || role.description), 150);
       const lens = clip(normalizeText(role.lens || purpose), 90);
+      const assignment = clip(normalizeText(role.assignment || role.instruction) || `${purpose} ${lens ? `관점은 "${lens}"입니다.` : ""}`.trim(), 180);
+      const stance = clip(normalizeText(role.stance || role.position || role.claim || role.argument) || purpose, 180);
+      const option = clip(normalizeText(role.option || role.choice || role.channel || role.target) || lens, 80);
+      const mustChallenge = clip(normalizeText(role.mustChallenge || role.challenge || role.counterTarget || role.rebuttal) || `${option || lens || "다른 선택지"}의 약한 근거를 구체적으로 반박합니다.`, 180);
+      const actionBias = clip(normalizeText(role.actionBias || role.firstAction || role.experiment || role.action || role.nextAction) || assignment, 180);
       return {
         id: normalizeText(role.id).replace(/[^a-zA-Z0-9_-]/g, "") || `agent${index + 1}`,
         name: clip(normalizeText(role.name) || `서브 에이전트 ${index + 1}`, 26),
         purpose,
         lens,
-        assignment: clip(normalizeText(role.assignment || role.instruction) || `${purpose} ${lens ? `관점은 "${lens}"입니다.` : ""}`.trim(), 180),
+        stance,
+        option,
+        assignment,
+        mustChallenge,
+        actionBias,
         callSignal: clip(normalizeText(role.callSignal || role.reason) || `${lens || "다른 관점"}을 분리해서 보기 위해 호출합니다.`, 140),
         color: normalizeColor(role.color) || colors[index % colors.length],
       };
@@ -2513,13 +2672,10 @@ async function streamDebateLite(req, res) {
       roleId: "main",
       roleName: "Main Agent",
       round: 1,
-      content: `토론 주제를 확정했습니다. 지금부터 ${rolePlan.roles
+      content: `토론 주제를 정리했습니다. 1라운드는 각자 선택지를 주장하고, 2라운드는 서로 반박하며 실행안을 좁히겠습니다. 지금부터 ${rolePlan.roles
         .map((role) => role.name)
-        .join(", ")} 순서로 토론을 진행하겠습니다. 사람이 중간에 끼어들면 그 발언을 다음 턴에 우선 반영합니다.`,
+        .join(", ")} 순서로 논의하겠습니다. 사람이 중간에 끼어들면 그 발언을 다음 흐름에 우선 반영합니다.`,
     });
-    introMessage.content = `토론 주제를 정리했습니다. 지금부터 ${rolePlan.roles
-      .map((role) => role.name)
-      .join(", ")} 순서로 논의하겠습니다. 사람이 중간에 끼어들면 그 발언을 다음 흐름에 우선 반영합니다.`;
     session.messages.push(introMessage);
     session.updatedAt = new Date().toISOString();
     await saveSession(session);
@@ -2537,23 +2693,25 @@ async function streamDebateLite(req, res) {
         writeEvent({ type: "message", message });
       }
     } else {
-      for (const role of roles) {
-        if (closed) break;
-        writeEvent({ type: "role_start", roleId: role.id, roleName: role.name, round: 1 });
-        const result = await runRoleTurn({
-          session,
-          role,
-          round: 1,
-          engineMode: runtime.provider,
-          runtime,
-          strict: true,
-        });
-        if (closed) break;
-        const message = buildAgentMessage({ session, role, round: 1, result });
-        session.messages.push(message);
-        session.updatedAt = new Date().toISOString();
-        await saveSession(session);
-        writeEvent({ type: "message", message });
+      for (const round of [1, 2]) {
+        for (const role of roles) {
+          if (closed) break;
+          writeEvent({ type: "role_start", roleId: role.id, roleName: role.name, round });
+          const result = await runRoleTurn({
+            session,
+            role,
+            round,
+            engineMode: runtime.provider,
+            runtime,
+            strict: true,
+          });
+          if (closed) break;
+          const message = buildAgentMessage({ session, role, round, result });
+          session.messages.push(message);
+          session.updatedAt = new Date().toISOString();
+          await saveSession(session);
+          writeEvent({ type: "message", message });
+        }
       }
     }
 
@@ -2752,11 +2910,15 @@ function liteRoleToStoredRole(role) {
   return {
     id: role.id,
     name: role.name,
-    description: role.purpose,
+    description: role.stance || role.purpose,
     instruction: [
       `${role.purpose} 관점은 "${role.lens}"입니다.`,
+      role.stance ? `고정 주장: ${role.stance}` : "",
+      role.option ? `대표 선택지: ${role.option}` : "",
       role.assignment ? `배정 임무: ${role.assignment}` : "",
-      "발언은 짧고 구체적으로, 다음 판단에 필요한 조건을 남깁니다.",
+      role.mustChallenge ? `반박할 지점: ${role.mustChallenge}` : "",
+      role.actionBias ? `첫 실행안: ${role.actionBias}` : "",
+      "발언은 회의 참가자처럼 짧고 구체적으로 하며, 다음 판단에 필요한 실행 조건을 남깁니다.",
     ].filter(Boolean).join(" "),
     color: role.color,
   };
@@ -2764,75 +2926,83 @@ function liteRoleToStoredRole(role) {
 
 function buildDebateLiteDecisionText(topic, rolePlan) {
   const roleLines = rolePlan.roles
-    .map((role, index) => `${index + 1}. ${role.name}: ${role.assignment || role.purpose}`)
+    .map((role, index) => {
+      const stance = role.stance || role.assignment || role.purpose;
+      const action = role.actionBias ? ` / 첫 행동: ${role.actionBias}` : "";
+      return `${index + 1}. ${role.name}: ${stance}${action}`;
+    })
     .join("\n");
-  return `"${topic}"은 이제 토론을 시작해도 좋은 주제입니다.\n\n메인 판단: ${rolePlan.reason}\n\n배정된 역할\n${roleLines}`;
+  return `"${topic}"은 이제 토론을 시작해도 좋은 주제입니다.\n\n메인 판단: ${rolePlan.reason}\n\n배정된 입장\n${roleLines}`;
+}
+
+function liteRoleStance(role) {
+  return normalizeText(role.stance || role.position || role.claim || role.assignment || role.purpose || role.description);
+}
+
+function liteRoleOption(role) {
+  return normalizeText(role.option || role.choice || role.channel || role.lens || role.name);
+}
+
+function liteRoleChallenge(role) {
+  return normalizeText(role.mustChallenge || role.challenge || role.counterTarget || role.rebuttal || role.callSignal || "다른 선택지의 약한 근거를 짚어야 합니다.");
+}
+
+function liteRoleAction(role) {
+  return normalizeText(role.actionBias || role.firstAction || role.experiment || role.action || role.assignment || "이번 주에 확인할 작은 행동을 정합니다.");
+}
+
+function debateLiteFactLine(session) {
+  const agenda = session.liteAgenda || {};
+  const memory = agenda.agendaState?.memory || {};
+  const facts = [];
+  if (memory.product) facts.push(`대상: ${memory.product}`);
+  if (Array.isArray(memory.candidates) && memory.candidates.length) {
+    facts.push(`후보: ${memory.candidates.slice(0, 4).join(", ")}`);
+  }
+  if (Array.isArray(memory.facts) && memory.facts.length) {
+    facts.push(memory.facts.slice(0, 4).join(", "));
+  }
+  if (memory.constraint) facts.push(`제약: ${memory.constraint}`);
+  if (memory.constraints) {
+    const constraints = Array.isArray(memory.constraints) ? memory.constraints.join(", ") : normalizeText(memory.constraints);
+    if (constraints) facts.push(`제약: ${constraints}`);
+  }
+  return clip(facts.join(" / ") || normalizeText(agenda.summary) || session.topic, 260);
 }
 
 function buildDebateLiteScript(session, rolePlan) {
-  const [first, second, third] = rolePlan.roles;
-  const topic = session.topic;
-  const businessLike = /사업|아이디어|MVP|기능|고객|시장|가격|수익|마케팅|첫 고객|실행|운영|피벗|중단|B2B|SaaS|제품|창업|채널|세일즈/i.test(topic);
-  const evidenceTarget = businessLike ? "실제 고객 신호" : "실제 선택 근거";
-  const opportunityOptions = businessLike
-    ? "고객 인터뷰, 랜딩페이지, 수동 운영, 세일즈 접촉"
-    : "대안 실행, 자료 확인, 작은 실험, 일정 조정";
-  const firstExperiment = businessLike
-    ? "1주일 안에 후보 고객 5명에게 문제 인터뷰를 하고, 이 문제가 예산이나 반복 업무와 연결되는지 확인"
-    : "작게 실행 가능한 실험 하나를 정하고, 그 결과가 어떤 결정을 뒷받침하는지 확인";
+  const roles = rolePlan.roles;
+  const [first, second, third] = roles;
+  const factLine = debateLiteFactLine(session);
+  const roleLabel = (role) => role.name.replace(/\s*\(Agent\s*\d+\)\s*$/i, "");
+  const previous = (role) => roles[(roles.indexOf(role) + roles.length - 1) % roles.length] || first;
+  const next = (role) => roles[(roles.indexOf(role) + 1) % roles.length] || second;
+  const opening = (role, index) => makeDebateLiteMessage({
+    session,
+    roleId: role.id,
+    roleName: `${role.name} (Agent ${index + 1})`,
+    round: 1,
+    content: `제 입장은 분명합니다. ${liteRoleStance(role)} 사용자 맥락은 ${factLine}이므로, 저는 ${liteRoleOption(role)}부터 비교해야 한다고 봅니다. 첫 행동은 ${liteRoleAction(role)}`,
+  });
+  const rebuttal = (role, index) => {
+    const target = previous(role);
+    const nextRole = next(role);
+    return makeDebateLiteMessage({
+      session,
+      roleId: role.id,
+      roleName: `${role.name} (Agent ${index + 1})`,
+      round: 2,
+      content: `${roleLabel(target)} 의견에는 동의하는 부분이 있지만 그대로 가면 놓치는 게 있습니다. ${liteRoleChallenge(role)} 그래서 저는 "${liteRoleOption(nextRole)}" 선택지와 비교하더라도, 오늘 결정 기준은 "${liteRoleAction(role)}"입니다.`,
+    });
+  };
 
   return [
-    makeDebateLiteMessage({
-      session,
-      roleId: "main",
-      roleName: "Main Agent",
-      round: 1,
-      content: `토론 주제를 정리했습니다. 지금부터 ${rolePlan.roles
-        .map((role) => role.name)
-        .join(", ")} 순서로 논의하겠습니다. 사람이 중간에 끼어들면 그 발언을 다음 흐름에 우선 반영합니다.`,
-    }),
-    makeDebateLiteMessage({
-      session,
-      roleId: first.id,
-      roleName: `${first.name} (Agent 1)`,
-      round: 1,
-      content: `먼저 "${topic}"에서 가장 조심해야 할 지점은 ${first.lens}입니다. 좋은 느낌만으로 결론내리지 말고, 판단 기준과 실패 기준을 먼저 분리해야 합니다.`,
-    }),
-    makeDebateLiteMessage({
-      session,
-      roleId: second.id,
-      roleName: `${second.name} (Agent 2)`,
-      round: 1,
-      content: `동의합니다. 다만 검토만 길어지면 ${evidenceTarget}가 생기지 않습니다. 저는 "${topic}"을 바로 결론내기보다, 대안과 현실 행동을 비교하면서 무엇이 실제로 작동하는지 검증해야 한다고 봅니다.`,
-    }),
-    makeDebateLiteMessage({
-      session,
-      roleId: third.id,
-      roleName: `${third.name} (Agent 3)`,
-      round: 1,
-      content: `저는 이 논의를 실행 가능한 검증으로 바꾸겠습니다. 이 선택이 맞았다고 말할 수 있는 최소 조건, 틀렸다고 판단할 중단 조건, 다음 행동을 한 줄씩 정해야 합니다.`,
-    }),
-    makeDebateLiteMessage({
-      session,
-      roleId: first.id,
-      roleName: `${first.name} (Agent 1)`,
-      round: 2,
-      content: `추가로 확인하고 싶은 것은 기회비용입니다. "${topic}"에 시간을 쓰는 동안 ${opportunityOptions} 중 무엇을 미루게 되는지 계산하지 않으면 판단이 너무 낙관적으로 흐릅니다.`,
-    }),
-    makeDebateLiteMessage({
-      session,
-      roleId: second.id,
-      roleName: `${second.name} (Agent 2)`,
-      round: 2,
-      content: `그렇다면 첫 단계는 ${evidenceTarget}를 만드는 것입니다. 예를 들어 ${firstExperiment}하면 다음 판단의 근거가 생깁니다.`,
-    }),
-    makeDebateLiteMessage({
-      session,
-      roleId: third.id,
-      roleName: `${third.name} (Agent 3)`,
-      round: 2,
-      content: `현재 합의점은 "바로 크게 실행하기보다, 핵심 가정을 작게 검증한다"입니다. 다음 결정은 누구에게 확인하고, 어떤 반응이면 계속하며, 어떤 신호가 나오면 방향을 바꿀지 정하는 것입니다.`,
-    }),
+    opening(first, 0),
+    opening(second, 1),
+    opening(third, 2),
+    rebuttal(first, 0),
+    rebuttal(second, 1),
+    rebuttal(third, 2),
   ];
 }
 
@@ -2888,14 +3058,14 @@ async function buildDebateLiteInterventionResponses(session, content, round, run
       roleId: mediator.id,
       roleName: `${mediator.name} (Agent ${roles.indexOf(mediator) + 1})`,
       round,
-      content: `좋습니다. 방금 개입은 토론의 기준을 바꿉니다. 이제 단순 찬반보다 "${content}"를 만족시키는 조건이 무엇인지 확인해야 합니다.`,
+      content: `좋습니다. 방금 개입은 토론의 기준을 바꿉니다. 제 입장은 여전히 "${liteRoleStance(mediator)}"이지만, 이제 "${content}"를 만족하지 못하면 이 선택지도 약해집니다. 그래서 다음 확인 행동은 ${liteRoleAction(mediator)}`,
     }),
     makeDebateLiteMessage({
       session,
       roleId: nextRole.id,
       roleName: `${nextRole.name} (Agent ${roles.indexOf(nextRole) + 1})`,
       round,
-      content: `그 기준을 적용하면 "${session.topic}"의 다음 검토 포인트는 실행 순서입니다. 우선순위를 낮춰야 할 부분과 당장 실험해볼 부분을 분리하겠습니다.`,
+      content: `저는 그 기준을 적용해도 "${liteRoleOption(nextRole)}" 선택지를 비교 대상에서 빼면 안 된다고 봅니다. ${liteRoleChallenge(nextRole)} 방금 조건까지 포함해도 당장 확인할 일은 ${liteRoleAction(nextRole)}`,
     }),
   ];
 }
@@ -2903,22 +3073,31 @@ async function buildDebateLiteInterventionResponses(session, content, round, run
 function buildDebateLiteReport(session, rolePlan) {
   const roles = rolePlan.roles || liteRolesForSession(session);
   const roleNames = roles.map((role) => role.name).join(", ");
+  const firstRole = roles[0] || {};
+  const secondRole = roles[1] || {};
+  const thirdRole = roles[2] || {};
+  const options = roles.map((role) => liteRoleOption(role)).filter(Boolean);
+  const optionText = options.length ? options.join(", ") : "후보 선택지";
   const humanCount = (session.messages || []).filter((message) => message.roleId === "human").length;
   return {
-    summary: `"${session.topic}"에 대해 ${roleNames} 관점으로 토론했습니다.${humanCount ? ` 사람 개입 ${humanCount}건을 반영했습니다.` : ""}`,
-    decision: "작게 시작하되 실패 기준과 사람 개입 조건을 먼저 정하는 방향으로 논의를 모았습니다.",
+    summary: `"${session.topic}"에 대해 ${roleNames}가 각자 다른 선택지를 주장하고 서로 반박했습니다.${humanCount ? ` 사람 개입 ${humanCount}건을 반영했습니다.` : ""}`,
+    decision: `첫 선택지 "${liteRoleOption(firstRole) || "후보안"}" 하나로 바로 결론을 고정하지 말고, 다음 선택지들을 같은 기간 안에서 비교 검증하는 방향이 좋습니다: ${optionText}.`,
     agreements: [
-      "처음부터 결론을 고정하지 않고 관점별 역할을 나눠 판단해야 합니다.",
-      "실험 범위, 성공 지표, 중단 기준을 한 세트로 정해야 합니다.",
-      "사용자의 중간 발언은 다음 턴의 우선 조건으로 반영되어야 합니다.",
+      "의견만 넓히지 말고 후보 선택지를 실제 행동으로 비교해야 합니다.",
+      "각 선택지는 성공 기준, 실패 기준, 첫 행동이 함께 있어야 합니다.",
+      "사용자가 중간에 넣은 조건은 다음 턴의 판단 기준으로 반영되어야 합니다.",
     ],
     disagreements: ["어느 지표를 최우선으로 볼지는 실제 사용 맥락에 따라 더 정해야 합니다."],
     nextActions: [
-      "파일럿 범위와 관찰 지표를 한 문장씩 정합니다.",
-      "사람이 반드시 개입해야 하는 예외 상황을 적습니다.",
-      "다음 토론에서는 결론 후보를 2개로 좁혀 비교합니다.",
+      liteRoleAction(firstRole),
+      liteRoleAction(secondRole),
+      liteRoleAction(thirdRole),
+    ].filter(Boolean),
+    risks: [
+      liteRoleChallenge(firstRole),
+      liteRoleChallenge(secondRole),
+      liteRoleChallenge(thirdRole),
     ],
-    risks: ["역할이 너무 비슷하면 토론이 반복될 수 있으므로 역할 목적을 계속 선명하게 유지해야 합니다."],
   };
 }
 
@@ -3545,11 +3724,14 @@ function buildRolePrompt({ session, role, round, intervention }) {
   const agendaContext = renderAgendaContextForPrompt(session);
 
   return [
-    "당신은 사람이 관찰하는 공개 토론방 안에서 말하는 에이전트입니다.",
+    "당신은 사람이 관찰하는 공개 토론방 안에서 말하는 회의 참가자입니다.",
     "내부 추론은 공개하지 말고, 최종 발언만 한국어로 짧게 작성하세요.",
     "명령 실행, 파일 읽기, 파일 쓰기, 네트워크 호출을 하지 마세요. 이 요청은 텍스트 발언 생성만 허용합니다.",
     "사람의 채팅은 특정 역할 대상이 아니라 전체 토론 흐름에 들어온 개입입니다. 자연스럽게 이어받으세요.",
     "영어 제품명은 가능하면 한국어 표기로 바꾸세요. 예: OpenClaw는 오픈클로, Codex는 코덱스, Claude는 클로드.",
+    "조언자처럼 포괄적으로 말하지 말고, 이 역할이 맡은 선택지를 실제 사람처럼 1인칭으로 주장하세요.",
+    "사용자가 말한 고객, 제약, 후보 선택지, 현재 상황 중 최소 하나를 반드시 집어서 말하세요.",
+    "금지: '고객 니즈를 파악해야 합니다', '시장성을 검토해야 합니다', '차별화가 중요합니다', '리스크를 고려해야 합니다'처럼 일반론만 말하기. 이런 표현을 쓰려면 바로 뒤에 오늘/이번 주에 할 구체 행동을 붙이세요.",
     "",
     `토론 주제: ${session.topic}`,
     agendaContext ? `사전 대화에서 확인한 사용자 맥락:\n${agendaContext}` : "",
@@ -3568,8 +3750,11 @@ function buildRolePrompt({ session, role, round, intervention }) {
     "응답 형식:",
     "- 2~5문장",
     "- 한국어만 사용",
-    "- 이 역할의 관점이 분명해야 함",
+    "- 첫 문장에 이 역할의 주장 또는 반박이 분명해야 함",
+    "- 라운드 1이면 자기 선택지를 주장하고 첫 실행안을 제시",
+    "- 라운드 2 이상이면 이전 역할 중 하나를 직접 언급해 반박하거나 보완",
     "- 사람의 채팅이나 이전 발언을 한 가지 이상 이어받아야 함",
+    "- 마지막 문장은 다음 행동, 확인 기준, 중단 기준 중 하나로 끝내기",
     "",
     "지금 바로 위 토론 주제에 대한 실제 발언만 출력하세요. 추가 주제를 요청하거나 대기하지 마세요.",
   ].join("\n");
@@ -3591,6 +3776,9 @@ function buildCodexRolePrompt({ session, role, round, intervention }) {
     transcript || "아직 이전 발언이 없습니다. 이 주제에 대한 첫 발언을 하세요.",
     "",
     "위 토론 주제에 대해 지금 바로 이 역할의 실제 발언만 작성하세요.",
+    "조언자처럼 넓게 말하지 말고, 이 역할의 선택지를 1인칭으로 주장하거나 이전 발언을 반박하세요.",
+    "사용자가 말한 고객, 제약, 후보 선택지, 현재 상황 중 최소 하나를 반드시 집으세요.",
+    "라운드 1이면 자기 선택지와 첫 행동을 말하고, 라운드 2 이상이면 이전 역할 하나를 직접 언급해 반박하거나 보완하세요.",
     "준비됐다는 말, 주제를 달라는 말, 파일/작업공간 언급, 내부 추론 공개는 금지입니다.",
     "한국어 2~5문장으로만 답하세요.",
   ]
@@ -3612,6 +3800,7 @@ function buildReportPrompt(session) {
     "다음 공개 토론을 한국어 최종 보고서로 정리하세요.",
     "내부 추론은 공개하지 말고 JSON만 출력하세요.",
     "추가 입력을 기다리지 말고 즉시 JSON 객체 하나만 출력하세요.",
+    "결론은 추상 조언이 아니라 권장 선택지, 남은 쟁점, 이번 주 실행 순서로 정리하세요.",
     "스키마:",
     '{"summary":"한 문단 요약","decision":"권장 결론","agreements":["합의 1"],"disagreements":["쟁점 1"],"nextActions":["다음 행동 1"],"risks":["주의할 점 1"]}',
     "",
@@ -3627,6 +3816,7 @@ function buildCodexReportPrompt(session) {
     "",
     "아래 공개 토론 내용을 바탕으로 한국어 최종 보고서 JSON 하나만 작성하세요.",
     "파일이나 작업공간을 언급하지 말고, 추가 입력을 요청하지 마세요.",
+    "결론은 추상 조언이 아니라 권장 선택지, 남은 쟁점, 이번 주 실행 순서로 정리하세요.",
     'JSON 스키마: {"summary":"한 문단 요약","decision":"권장 결론","agreements":["합의 1"],"disagreements":["쟁점 1"],"nextActions":["다음 행동 1"],"risks":["주의할 점 1"]}',
     "",
     "토론 내용:",
@@ -3704,7 +3894,10 @@ function buildHeuristicReport(session) {
 
 function mockRoleResponse({ session, role, round, intervention }) {
   const chatLine = intervention ? ` 방금 사람은 "${intervention}"라고 끼어들었습니다.` : "";
-  return `${role.name} 관점에서 보면 "${session.topic}"의 핵심은 역할이 정해져 있다는 느낌보다 토론 흐름이 살아 있어야 한다는 점입니다.${chatLine} 저는 ${role.description}라는 책임에 맞춰, 지금 단계에서는 사용자가 만든 역할과 사람 채팅을 같은 대화 기록 안에 자연스럽게 섞는 방향을 제안합니다. 라운드 ${round}에서는 이 구조가 실제 사용자가 이해하기 쉬운지 확인해야 합니다.`;
+  if (round >= 2) {
+    return `${role.name} 입장에서 저는 앞선 의견을 그대로 따르기보다 한 번 좁혀 보겠습니다.${chatLine} 제 주장은 "${role.description}"이고, 지금은 말보다 오늘 실행할 기준이 필요합니다. 그래서 다음 행동은 ${role.instruction || role.description}`;
+  }
+  return `${role.name} 입장에서 제 주장은 "${role.description}"입니다.${chatLine} 이 선택지가 맞는지는 추상 검토가 아니라 사용자가 말한 조건 안에서 바로 확인해야 합니다. 첫 행동은 ${role.instruction || role.description}`;
 }
 
 function chooseNextRole(session) {
@@ -3728,8 +3921,8 @@ function normalizeRoles(value) {
   for (let index = 0; index < source.length && roles.length < 8; index += 1) {
     const item = source[index] || {};
     const name = clip(normalizeText(item.name) || `역할 ${index + 1}`, 32);
-    const description = clip(normalizeText(item.description) || `${name} 관점으로 토론합니다.`, 140);
-    const instruction = clip(normalizeText(item.instruction) || description, 240);
+    const description = clip(normalizeText(item.description) || `${name} 관점으로 토론합니다.`, 180);
+    const instruction = clip(normalizeText(item.instruction) || description, 560);
     const baseId = normalizeText(item.id).replace(/[^a-zA-Z0-9_-]/g, "") || `role-${index + 1}`;
     let id = baseId;
     let suffix = 2;
