@@ -98,6 +98,7 @@
         }
 
         .app.chat-focus .main-panel {
+            overflow-y: auto;
             border-color: transparent;
             background: transparent;
             box-shadow: none;
@@ -112,10 +113,11 @@
         }
 
         .app.chat-focus .main-panel .message-list {
+            flex: 0 0 auto;
             align-items: stretch;
             width: min(800px, 100%);
             margin: 0 auto;
-            padding: 26px 0 22px;
+            padding: 18px 0 14px;
         }
 
         .app.chat-focus .main-panel .message {
@@ -241,6 +243,25 @@
             align-items: center;
             gap: 12px;
             min-width: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex: 0 0 auto;
+        }
+
+        .connection-button {
+            min-height: 40px;
+            padding-inline: 12px;
+            font-size: 0.84rem;
+            font-weight: 650;
+        }
+
+        .debate-connection-button {
+            display: none;
         }
 
         .mark {
@@ -590,13 +611,24 @@
         .intake-panel {
             display: grid;
             width: min(800px, 100%);
-            gap: 12px;
-            margin: 0 auto 12px;
-            padding: 14px;
+            gap: 10px;
+            max-height: min(610px, calc(100svh - 210px));
+            margin: 0 auto 10px;
+            padding: 12px;
+            overflow-y: auto;
             border: 1px solid var(--line);
             border-radius: 18px;
             background: rgba(255, 255, 255, 0.94);
             box-shadow: 0 14px 36px rgba(32, 33, 35, 0.07);
+        }
+
+        .intake-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .intake-panel::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: #cbc9bf;
         }
 
         .intake-panel.hidden {
@@ -643,7 +675,7 @@
         .intake-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 9px;
+            gap: 8px 10px;
         }
 
         .intake-field {
@@ -663,17 +695,17 @@
 
         .intake-field textarea {
             width: 100%;
-            min-height: 66px;
-            max-height: 150px;
+            min-height: 56px;
+            max-height: 130px;
             resize: vertical;
             border: 1px solid var(--line);
             border-radius: var(--radius);
             outline: none;
             background: #ffffff;
             color: var(--text);
-            padding: 9px 10px;
+            padding: 8px 10px;
             font-size: 0.84rem;
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
         .intake-field textarea:focus {
@@ -1043,6 +1075,10 @@
             .app.debate-mode .main-panel {
                 display: none;
             }
+
+            .app.debate-mode .debate-connection-button {
+                display: inline-flex;
+            }
         }
 
         @media (max-width: 680px) {
@@ -1098,6 +1134,18 @@
                 width: 100%;
             }
 
+            .header-actions {
+                width: 100%;
+            }
+
+            .header-actions .button {
+                width: auto;
+            }
+
+            .debate-connection-button {
+                width: auto;
+            }
+
             .spawn-grid {
                 grid-template-columns: 1fr;
             }
@@ -1119,9 +1167,15 @@
                         <p class="subcopy">주제 정리, 역할 배정, 토론 진행</p>
                     </div>
                 </div>
-                <button class="button button-icon" id="resetButton" type="button" title="새 토론">
-                    <i data-lucide="rotate-ccw" size="17"></i>
-                </button>
+                <div class="header-actions">
+                    <button class="button connection-button" id="connectionButton" type="button">
+                        <i data-lucide="plug" size="16"></i>
+                        <span>AI 연결</span>
+                    </button>
+                    <button class="button button-icon" id="resetButton" type="button" title="새 토론">
+                        <i data-lucide="rotate-ccw" size="17"></i>
+                    </button>
+                </div>
             </header>
 
             <div class="runtime-store" id="openaiFields" hidden>
@@ -1212,6 +1266,9 @@
                     <div class="role-pill agent2"><span class="role-dot"></span><span>역할 대기</span></div>
                     <div class="role-pill agent3"><span class="role-dot"></span><span>역할 대기</span></div>
                 </div>
+                <button class="button button-icon debate-connection-button" id="debateConnectionButton" type="button" title="AI 연결">
+                    <i data-lucide="plug" size="17"></i>
+                </button>
             </header>
 
             <div class="message-list" id="debateChatBox"></div>
@@ -1238,6 +1295,8 @@
         const agendaStartBtn = document.getElementById("agendaStartBtn");
         const debateInput = document.getElementById("debateInput");
         const debateSendBtn = document.getElementById("debateSendBtn");
+        const connectionButton = document.getElementById("connectionButton");
+        const debateConnectionButton = document.getElementById("debateConnectionButton");
         const resetButton = document.getElementById("resetButton");
         const debateOverlay = document.getElementById("debateOverlay");
         const orchestrationView = document.getElementById("orchestrationView");
@@ -3047,6 +3106,12 @@ ${clipText(summary, 260)}`;
         intakeSubmitBtn.addEventListener("click", submitIntakeForm);
         agendaStartBtn.addEventListener("click", handleAgendaStart);
         debateForm.addEventListener("submit", handleHumanIntervention);
+        connectionButton.addEventListener("click", () => {
+            window.location.href = "/";
+        });
+        debateConnectionButton.addEventListener("click", () => {
+            window.location.href = "/";
+        });
         resetButton.addEventListener("click", resetDebate);
         providerButtons.forEach((button) => {
             button.addEventListener("click", () => selectRuntime(button.dataset.provider));
